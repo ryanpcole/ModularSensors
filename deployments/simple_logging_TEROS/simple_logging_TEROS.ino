@@ -1,8 +1,10 @@
 /** =========================================================================
- * @file simple_logging_LearnEnviroDIY.ino
- * @brief A data logging example for the Learn EnviroDIY tutorial.
+ * @file simple_logging_TEROS.ino
+ * @brief A data logging example for the Learn EnviroDIY tutorial. 
+ *        Using TEROS SDI-12 sensors
  *
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ * @author Ryan Cole <ryan.cole@oregonstate.edu>
  * @copyright (c) 2017-2022 Stroud Water Research Center (SWRC)
  *                          and the EnviroDIY Development Team
  *            This example is published under the BSD-3 license.
@@ -35,7 +37,7 @@
 // ==========================================================================
 /** Start [logging_options] */
 // The name of this program file
-const char* sketchName = "simple_logging.ino";
+const char* sketchName = "simple_logging_TEROS.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
 const char* LoggerID = "XXXXX";
 // How frequently (in minutes) to log data
@@ -93,6 +95,12 @@ MaximDS3231 ds3231(1);
 // at
 //   https://github.com/EnviroDIY/ModularSensors/wiki#these-sensors-are-currently-supported
 //   or can be copied from the `menu_a_la_carte.ino` example
+
+// ==========================================================================
+//  METER TEROS12 SDI-12 Soil VWC, Temp, EC Sensor
+// ==========================================================================
+/** Start [TEROS12] */
+#include <sensors/MeterTeros11.h>
 
 
 // ==========================================================================
