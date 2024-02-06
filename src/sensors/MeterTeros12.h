@@ -4,7 +4,7 @@
  * Part of the EnviroDIY ModularSensors library for Arduino
  * @author Written By: Anthony Aufdenkampe <aaufdenkampe@limno.com>
  * Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * Edited by Ryan Cole <ryan.cole@oregonstate.edu>
+ * Modified to work with TEROS12 by Ryan Cole <ryan.cole@oregonstate.edu>
  *
  * @brief Contains the MeterTeros12 sensor subclass and the variable subclasses
  * MeterTeros12_Ea, MeterTeros12_Temp, and MeterTeros12_VWC.
@@ -100,10 +100,10 @@
 /// counts, temperature, EC. It can also report 2 calculated variables: permittivity
 /// and water content
 // TODO Figure out the right number of variables and calced variables for Teros 12
-#define TEROS12_NUM_VARIABLES 6
+#define TEROS12_NUM_VARIABLES 5
 /// @brief Sensor::_incCalcValues; We calculate permittivity and water content
 /// from the raw counts and temperature reported by the Teros 12.
-#define TEROS12_INC_CALC_VARIABLES 3
+#define TEROS12_INC_CALC_VARIABLES 2
 
 /**
  * @anchor sensor_teros12_timing
@@ -204,8 +204,8 @@
  * of significant figures for averaging - resolution is 0.00001
  */
 #define TEROS12_EA_RESOLUTION 5
-/// @brief Sensor variable number; EA is stored in sensorValues[2].
-#define TEROS12_EA_VAR_NUM 2
+/// @brief Sensor variable number; EA is stored in sensorValues[3].
+#define TEROS12_EA_VAR_NUM 3
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "permittivity"
@@ -242,8 +242,8 @@
  * from 0 – 70% VWC
  */
 #define TEROS12_VWC_RESOLUTION 3
-/// @brief Sensor variable number; VWC is stored in sensorValues[3].
-#define TEROS12_VWC_VAR_NUM 3
+/// @brief Sensor variable number; VWC is stored in sensorValues[4].
+#define TEROS12_VWC_VAR_NUM 4
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "volumetricWaterContent"
@@ -273,25 +273,22 @@
  */
 /**@{*/
 /**
- * @brief Decimals places in string representation; ECbulk should have 3.
+ * @brief Decimals places in string representation; ECbulk should have 0.
  *
  */
-#define TEROS12_ECBULK_RESOLUTION 3
-/// @brief Sensor variable number; ECbulk is stored in sensorValues[4]. TODO Check this is in right place
-#define TEROS12_ECBULK_VAR_NUM 4
+#define TEROS12_ECBULK_RESOLUTION 0
+/// @brief Sensor variable number; ECbulk is stored in sensorValues[2]. TODO Check this is in right place
+#define TEROS12_ECBULK_VAR_NUM 2
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "bulkElectricalConductivity"
 #define TEROS12_ECBULK_VAR_NAME "bulkElectricalConductivity"
 /// @brief Variable unit name in
-/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/); "decisiemenPerMeter"
-#define TEROS12_ECBULK_UNIT_NAME "decisiemenPerMeter"
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/); "microsiemenPerCentimetereter"
+#define TEROS12_ECBULK_UNIT_NAME "microsiemenPerCentimeter"
 /// @brief Default variable short code; "SoilECbulk"
 #define TEROS12_ECBULK_DEFAULT_CODE "SoilECbulk"
 /**@}*/
-
-// TODO Do I need to add a variable for EC at 25C? AKA Not bulk? Does the sensor even return that?
-
 
 /* clang-format off */
 /**
@@ -372,7 +369,7 @@ class MeterTeros12 : public SDI12Sensors {
 /**
  * @brief The Variable sub-class used for the
  * [raw calibrated VWC counts](@ref sensor_teros12_counts)
- * from a [Meter Teros soil moisture/water content sensor](@ref sensor_teros12).
+ * from a [Meter Teros 12 soil moisture/water content sensor](@ref sensor_teros12).
  *
  * @ingroup sensor_teros12
  */
@@ -410,6 +407,49 @@ class MeterTeros12_Count : public Variable {
     ~MeterTeros12_Count() {}
 };
 
+// TODO Fix this function to work for ECbulk
+// Defines the Bulk Electrical Conductivity
+/* clang-format off */
+/**
+ * @brief The Variable sub-class used for the
+ * [Bulk Electrical Conductivity](@ref sensor_teros12_ECbulk)
+ * from a [Meter Teros 12 soil moisture/water content sensor](@ref sensor_teros12).
+ *
+ * @ingroup sensor_teros12
+ */
+/* clang-format on */
+class MeterTeros12_ECbulk : public Variable {
+ public:
+    /**
+     * @brief Construct a new MeterTeros12_Count object.
+     *
+     * @param parentSense The parent MeterTeros12 providing the result
+     * values.
+     * @param uuid A universally unique identifier (UUID or GUID) for the
+     * variable; optional with the default value of an empty string.
+     * @param varCode A short code to help identify the variable in files;
+     * optional with a default value of "SoilECbulk".
+     */
+    explicit MeterTeros12_ECbulk(
+        MeterTeros12* parentSense, const char* uuid = "",
+        const char* varCode = TEROS12_ECBULK_DEFAULT_CODE)
+        : Variable(parentSense, (const uint8_t)TEROS12_ECBULK_VAR_NUM,
+                   (uint8_t)TEROS12_ECBULK_RESOLUTION, TEROS12_ECBULK_VAR_NAME,
+                   TEROS12_ECBULK_UNIT_NAME, varCode, uuid) {}
+    /**
+     * @brief Construct a new MeterTeros12_Count object.
+     *
+     * @note This must be tied with a parent MeterTeros12 before it can be used.
+     */
+    MeterTeros12_ECbulk()
+        : Variable((const uint8_t)TEROS12_ECBULK_VAR_NUM,
+                   (uint8_t)TEROS12_ECBULK_RESOLUTION, TEROS12_ECBULK_VAR_NAME,
+                   TEROS12_ECBULK_UNIT_NAME, TEROS12_ECBULK_DEFAULT_CODE) {}
+    /**
+     * @brief Destroy the MeterTeros12_Count object - no action needed.
+     */
+    ~MeterTeros12_ECbulk() {}
+};
 
 /* clang-format off */
 /**
@@ -451,6 +491,8 @@ class MeterTeros12_Temp : public Variable {
      */
     ~MeterTeros12_Temp() {}
 };
+
+
 
 
 // Defines the Ea/Matric Potential Variable

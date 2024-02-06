@@ -4,7 +4,8 @@
  * Part of the EnviroDIY ModularSensors library for Arduino
  * @author Written By: Anthony Aufdenkampe <aaufdenkampe@limno.com>
  * Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- *
+ * Modified to work with TEROS12 by Ryan Cole <ryan.cole@oregonstate.edu>
+ * 
  * @brief Implements the MeterTeros12 class.
  */
 
@@ -15,6 +16,7 @@ bool MeterTeros12::getResults(void) {
     // Set up the float variables for receiving data
     float raw  = -9999;
     float temp = -9999;
+    float ecbulk = -9999;
 
     // Check if this the currently active SDI-12 Object
     bool wasActive = _SDI12Internal.isActive();
@@ -71,6 +73,11 @@ bool MeterTeros12::getResults(void) {
     // Now read the temperature
     temp = _SDI12Internal.parseFloat(SKIP_NONE);
     MS_DEEP_DBG(F("    <<<"), String(temp, 10));
+#endif
+
+    // Now read the electrical conductivity
+    ecbulk = _SDI12Internal.parseFloat(SKIP_NONE);
+    MS_DEEP_DBG(F("    <<<"), String(ecbulk, 10));
 
     // read and dump anything else
     while (_SDI12Internal.available()) {
@@ -90,13 +97,14 @@ bool MeterTeros12::getResults(void) {
 
     MS_DBG(F("Raw VWC Counts:"), raw);
     MS_DBG(F("Raw Temperature Value:"), temp);
+    MS_DBG(F("Raw ECBulk Value:"), ecbulk);
 
     // Set up the float variables for calculated variable
     float ea  = -9999;
     float VWC = -9999;
 
     // Calculate the dielectric EA from the raw count value.
-    // Equation 8 from the Teros 11 user manual:
+    // Equation 8 from the Teros 11-12 user manual:
     // http://publications.metergroup.com/Manuals/20587_TEROS11-12_Manual_Web.pdf
     if (raw < 0 || raw > 5000) {
         MS_DBG(
@@ -145,6 +153,7 @@ bool MeterTeros12::getResults(void) {
 
     verifyAndAddMeasurementResult(TEROS12_COUNT_VAR_NUM, raw);
     verifyAndAddMeasurementResult(TEROS12_TEMP_VAR_NUM, temp);
+    verifyAndAddMeasurementResult(TEROS12_ECBULK_VAR_NUM, ecbulk);
     verifyAndAddMeasurementResult(TEROS12_EA_VAR_NUM, ea);
     verifyAndAddMeasurementResult(TEROS12_VWC_VAR_NUM, VWC);
 
