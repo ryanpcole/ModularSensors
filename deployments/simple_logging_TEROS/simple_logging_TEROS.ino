@@ -41,9 +41,9 @@ const char* sketchName = "simple_logging_TEROS.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
 const char* LoggerID = "XXXXX";
 // How frequently (in minutes) to log data
-const uint8_t loggingInterval = 15;
+const uint8_t loggingInterval = 1;
 // Your logger's timezone.
-const int8_t timeZone = -5;  // Eastern Standard Time
+const int8_t timeZone = -8;  // Pacific Standard Time
 // NOTE:  Daylight savings time will not be applied!  Please use standard time!
 
 // Set the input and output pins for the logger
@@ -52,7 +52,7 @@ const int32_t serialBaud = 115200;  // Baud rate for debugging
 const int8_t  greenLED   = 8;       // Pin for the green LED
 const int8_t  redLED     = 9;       // Pin for the red LED
 const int8_t  buttonPin  = 21;      // Pin for debugging mode (ie, button pin)
-const int8_t  wakePin    = 31;  // MCU interrupt/alarm pin to wake from sleep
+const int8_t  wakePin    = 31;      // MCU interrupt/alarm pin to wake from sleep
 // Mayfly 0.x D31 = A7
 // Set the wake pin to -1 if you do not want the main processor to sleep.
 // In a SAMD system where you are using the built-in rtc, set wakePin to 1
@@ -99,62 +99,54 @@ MaximDS3231 ds3231(1);
 // ==========================================================================
 //  METER TEROS12 SDI-12 Soil VWC, Temp, EC Sensor
 // ==========================================================================
-/** Start [TEROS12] */
-#include <sensors/MeterTeros11.h>
+/** Start [meter_teros12] */
+#include <MeterTeros12.h>
 
+// NOTE: Use -1 for any pins that don't apply or aren't being used.
+const char*   teros12SDI12address = "1";  // The SDI-12 Address of the Teros 12 - Need to set this manually
+const int8_t  terosPower          = sensorPowerPin;  // Power pin
+const int8_t  terosData           = 7;               // The SDI-12 data pin
+const uint8_t teros12NumberReadings = 1;  // The number of readings to average
 
-// ==========================================================================
-//  Bosch BME280 Environmental Sensor
-// ==========================================================================
-/** Start [bme280] */
-#include <sensors/BoschBME280.h>
+// Create a METER TEROS 12 sensor object
+MeterTeros12 teros12(*teros12SDI12address, terosPower, terosData,
+                     teros12NumberReadings);
 
-const int8_t I2CPower    = sensorPowerPin;  // Power pin (-1 if unconnected)
-uint8_t      BMEi2c_addr = 0x76;
-// The BME280 can be addressed either as 0x77 (Adafruit default) or 0x76 (Grove
-// default) Either can be physically mofidied for the other address
+/* DO I NEED THESE LINES OR IS CREATING THE VARIABLE LIST BELOW ENOUGH?
+// Create the matric potential, volumetric water content, and temperature
+// variable pointers for the Teros 12
+Variable* teros12Ea =
+    new MeterTeros12_Ea(&teros12, "12345678-abcd-1234-ef00-1234567890ab");
+Variable* teros12Temp =
+    new MeterTeros12_Temp(&teros12, "12345678-abcd-1234-ef00-1234567890ab");
+Variable* teros12VWC =
+    new MeterTeros12_VWC(&teros12, "12345678-abcd-1234-ef00-1234567890ab");
+Variable* teros12Count =
+    new MeterTeros12_Count(&teros12, "12345678-abcd-1234-ef00-1234567890ab");
+Variable* teros12EC =
+    new MeterTeros12_ECbulk(&teros12, "12345678-abcd-1234-ef00-1234567890ab");
+*/ 
+/** End [meter_teros12] */
 
-// Create a Bosch BME280 sensor object
-BoschBME280 bme280(I2CPower, BMEi2c_addr);
-/** End [bme280] */
-
-
-// ==========================================================================
-//  Maxim DS18 One Wire Temperature Sensor
-// ==========================================================================
-/** Start [ds18] */
-#include <sensors/MaximDS18.h>
-
-// OneWire Address [array of 8 hex characters]
-// If only using a single sensor on the OneWire bus, you may omit the address
-// DeviceAddress OneWireAddress1 = {0x28, 0xFF, 0xBD, 0xBA, 0x81, 0x16, 0x03,
-// 0x0C};
-const int8_t OneWirePower = sensorPowerPin;  // Power pin (-1 if unconnected)
-const int8_t OneWireBus   = 6;  // OneWire Bus Pin (-1 if unconnected)
-
-// Create a Maxim DS18 sensor objects (use this form for a known address)
-// MaximDS18 ds18(OneWireAddress1, OneWirePower, OneWireBus);
-
-// Create a Maxim DS18 sensor object (use this form for a single sensor on bus
-// with an unknown address)
-MaximDS18 ds18(OneWirePower, OneWireBus);
-/** End [ds18] */
 
 
 // ==========================================================================
 //  Creating the Variable Array[s] and Filling with Variable Objects
 // ==========================================================================
+
+// TODO make sure the variable array is properly initialized to read the teros12
+
 /** Start [variable_arrays] */
 Variable* variableList[] = {
     new ProcessorStats_SampleNumber(&mcuBoard),
     new ProcessorStats_FreeRam(&mcuBoard),
     new ProcessorStats_Battery(&mcuBoard),
     new MaximDS3231_Temp(&ds3231),
-    new BoschBME280_Temp(&bme280),
-    new BoschBME280_Humidity(&bme280),
-    new BoschBME280_Pressure(&bme280),
-    new BoschBME280_Altitude(&bme280),
-    new MaximDS18_Temp(&ds18)
+    new MeterTeros12_Count(&teros12),
+    new MeterTeros12_VWC(&teros12),
+    new MeterTeros12_Temp(&teros12),
+    new MeterTeros12_Ea(&teros12),
+    new MeterTeros12_ECbulk(&teros12)
     // Additional sensor variables can be added here, by copying the syntax
     //   for creating the variable pointer (FORM1) from the
     //   `menu_a_la_carte.ino` example
