@@ -221,6 +221,7 @@ void setup() {
     Logger::setRTCTimeZone(0);
 
     // Set information pins
+    // TODO - Do I need to change these? Or is the pin reading handled by the logger object elsewhere?
     dataLogger.setLoggerPins(wakePin, sdCardSSPin, sdCardPwrPin, buttonPin,
                              greenLED);
 
