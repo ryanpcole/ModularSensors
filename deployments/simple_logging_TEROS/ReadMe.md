@@ -8,6 +8,8 @@ The example may be run exactly as written.
 
 This is the example you should use to deploy a logger somewhere where you don't want or have access to a way of streaming live data and you won't want to upload data to the Monitor My Watershed data portal.
 
+TODO: Figure out how the real time clock works.
+
 _______
 
 [//]: # ( @tableofcontents )

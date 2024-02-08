@@ -4,7 +4,7 @@
  *        Using TEROS SDI-12 sensors
  *
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @author Ryan Cole <ryan.cole@oregonstate.edu>
+ * Modified by Ryan Cole <ryan.cole@oregonstate.edu>
  * @copyright (c) 2017-2022 Stroud Water Research Center (SWRC)
  *                          and the EnviroDIY Development Team
  *            This example is published under the BSD-3 license.
@@ -103,7 +103,7 @@ MaximDS3231 ds3231(1);
 #include <MeterTeros12.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
-const char*   teros12SDI12address = "1";  // The SDI-12 Address of the Teros 12 - Need to set this manually
+const char*   teros12SDI12address = "1";  // The SDI-12 Address of the Teros 12 - Need to set this manually for each sensor
 const int8_t  terosPower          = sensorPowerPin;  // Power pin
 const int8_t  terosData           = 7;               // The SDI-12 data pin
 const uint8_t teros12NumberReadings = 1;  // The number of readings to average
