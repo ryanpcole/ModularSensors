@@ -7,8 +7,6 @@
  * Modified to work with TEROS12 by Ryan Cole <ryan.cole@oregonstate.edu>
  * 
  * @brief Implements the MeterTeros12 class.
- *        Gets the rsults of either a standard or a concurrent measurement
- *        Returns True if the full number of expected results was returned.
  */
 
 #include "MeterTeros12.h"

@@ -105,7 +105,7 @@ MaximDS3231 ds3231(1);
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const char*   teros12SDI12address = "1";  // The SDI-12 Address of the Teros 12 - Need to set this manually for each sensor
 const int8_t  terosPower          = sensorPowerPin;  // Power pin
-const int8_t  terosData           = 4;               // The SDI-12 data pin
+const int8_t  terosData           = 7;               // The SDI-12 data pin
 const uint8_t teros12NumberReadings = 1;  // The number of readings to average
 
 // Create a METER TEROS 12 sensor object
