@@ -93,7 +93,7 @@
 #include "VariableBase.h"
 #include "math.h"
 
-/** @ingroup sensor_analog_cond */
+/** @ingroup sensor_cs500 */
 /**@{*/
 
 // Sensor Specific Defines
@@ -103,6 +103,7 @@
 /// @brief Sensor::_incCalcValues; we calculate actual temperature and rH from
 /// voltages read
 #define CS500_INC_CALC_VARIABLES 2
+
 
 /**
  * @anchor sensor_cs500_parts_timing
@@ -130,34 +131,76 @@
 
 
 /**
- * @anchor sensor_cs500_temp
- * @name Air temperature
- * - Range: low 100's when open air, for short circuit: a high number
- * - Accuracy: needs determining for each combination of ADC. ADC_REF, and
- * series R. its designed as a very simple relative EC measurement
+ * @anchor sensor_cs500_tempV
+ * @name Raw voltage from air temperature sensor
+ * - Range: 0-1.0 V
  *
- * {{ @ref AnalogElecConductivity_EC::AnalogElecConductivity_EC }}
- */
+ * {{ @ref CS500_tempV::CS500_tempV }}
+ * 
+ *  */
 /**@{*/
 /**
- * @brief Decimals places in string representation; EC should have 1
+ * @brief Decimals places in string representation; Temp and rH should both have 1
  *
- * Range of 0-3V3 with 10bit ADC - resolution of 0.003 = 3 µS/cm.
+ * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define ANALOGELECCONDUCTIVITY_EC_RESOLUTION 1
-/// @brief Sensor vensor variable number; EC is stored in sensorValues[0].
-#define ANALOGELECCONDUCTIVITY_EC_VAR_NUM 0
+#define TEMP_VOLTAGE_RESOLUTION 3
+/// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
+#define TEMP_VOLTAGE_VAR_NUM 0
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
-/// "electricalConductivity"
-#define ANALOGELECCONDUCTIVITY_EC_VAR_NAME "electricalConductivity"
+/// "Voltage"
+#define TEMP_VOLTAGE_VAR_NAME "Voltage"
 /// @brief Variable unit name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
-/// "microsiemenPerCentimeter" (µS/cm)
-#define ANALOGELECCONDUCTIVITY_EC_UNIT_NAME "microsiemenPerCentimeter"
-/// @brief Default variable short code; "anlgEc"
-#define ANALOGELECCONDUCTIVITY_EC_DEFAULT_CODE "anlgEc"
+/// "volts"
+#define TEMP_VOLTAGE_UNIT_NAME "volts"
+/// @brief Default variable short code; "V"
+#define TEMP_VOLTAGE_DEFAULT_CODE "V"
 /**@}*/
+
+// TODO: Make a section for rH voltage
+/**
+ * @anchor sensor_cs500_rHV
+ * @name Raw voltage from relative humidity sensor
+ * - Range: 0-1.0 V
+ *
+ * {{ @ref CS500_rHV::CS500_rHV }}
+ * 
+ *  */
+/**@{*/
+/**
+ * @brief Decimals places in string representation; Temp and rH should both have 1
+ *
+ * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
+ */
+#define RH_VOLTAGE_RESOLUTION 3
+/// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
+#define RH_VOLTAGE_VAR_NUM 1
+/// @brief Variable name in
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
+/// "Voltage"
+#define RH_VOLTAGE_VAR_NAME "Voltage"
+/// @brief Variable unit name in
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
+/// "volts"
+#define RH_VOLTAGE_UNIT_NAME "volts"
+/// @brief Default variable short code; "V"
+#define RH_VOLTAGE_DEFAULT_CODE "V"
+/**@}*/
+
+// TODO: Make a section for calculated temp C?
+
+// TODO: Make a section for calcualted rH %?
+
+
+
+
+
+
+
+
+
 
 #if !defined ANALOG_EC_ADC_RESOLUTION
 /**
