@@ -60,7 +60,7 @@
  * - For the CS500 sensor manual:
  * https://s.campbellsci.com/documents/us/manuals/cs500.pdf
  *
- * @section sensor_analog_cond_flags Build flags
+ * @section sensor_analog_temprh_flags Build flags
  * - `-D CS500_ADC_RESOLUTION=##`
  *      - used to set the resolution of the processor ADC
  *      - @see #CS500_ADC_RESOLUTION
@@ -80,10 +80,10 @@
 #define SRC_SENSORS_CS500_H_
 
 #ifdef MS_CS500_DEBUG
-#define MS_DEBUGGING_STD "AnalogElecConductivity"
+#define MS_DEBUGGING_STD "AnalogCS500"
 #endif
 #ifdef MS_CS500_DEBUG_DEEP
-#define MS_DEBUGGING_DEEP "AnalogElecConductivity"
+#define MS_DEBUGGING_DEEP "AnalogCS500"
 #endif
 // Included Dependencies
 #include "ModSensorDebugger.h"
@@ -159,7 +159,7 @@
 #define TEMP_VOLTAGE_DEFAULT_CODE "V"
 /**@}*/
 
-// TODO: Make a section for rH voltage
+//  Make a section for rH voltage
 /**
  * @anchor sensor_cs500_rHV
  * @name Raw voltage from relative humidity sensor
@@ -189,9 +189,69 @@
 #define RH_VOLTAGE_DEFAULT_CODE "V"
 /**@}*/
 
-// TODO: Make a section for calculated temp C?
+// Make a section for calculated temp C
+/**
+ * @anchor sensor_cs500_tempC
+ * @name Air temperature calculated from raw voltage 
+ *
+ * {{ @ref CS500_tempC::CS500_tempC }}
+ * 
+ *  */
+/**@{*/
+/**
+ * @brief Using equation from manual to calculate temperature in degrees Celsius 
+ * from the supplied voltage. 
+ * 
+ * Equation is:
+ * degC = mV * 0.1 - 40
+ * 
+ */
+#define TEMP_DEGC_RESOLUTION 1
+/// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
+#define TEMP_DEGC_VAR_NUM 2
+/// @brief Variable name in
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
+/// "Temperature"
+#define TEMP_DEGC_VAR_NAME "Temperature"
+/// @brief Variable unit name in
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
+/// "Degree Celsius"
+#define TEMP_DEGC_UNIT_NAME "Degree Celsius"
+/// @brief Default variable short code; "degC"
+#define TEMP_DEGC_DEFAULT_CODE "degC"
+/**@}*/
 
-// TODO: Make a section for calcualted rH %?
+// calcualted rH %
+/**
+ * @anchor sensor_cs500_rH
+ * @name Relative humidity calculated from raw voltage 
+ *
+ * {{ @ref CS500_rH::CS500_rH }}
+ * 
+ *  */
+/**@{*/
+/**
+ * @brief Using equation from manual to calculate relative humidity in percent
+ * from the supplied voltage. 
+ * 
+ * Equation is:
+ * rH = mV * 0.1
+ * 
+ */
+#define RH_PERCENT_RESOLUTION 1
+/// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
+#define RH_PERCENT_VAR_NUM 3
+/// @brief Variable name in
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
+/// "Relative Humidity"
+#define RH_PERCENT_VAR_NAME "Relative Humidity"
+/// @brief Variable unit name in
+/// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
+/// "percent"
+#define RH_PERCENT_UNIT_NAME "percent"
+/// @brief Default variable short code; "rH
+#define RH_PERCENT_DEFAULT_CODE "rH%"
+/**@}*/
 
 
 
@@ -199,27 +259,24 @@
 
 
 
-
-
-
-#if !defined ANALOG_EC_ADC_RESOLUTION
+#if !defined ANALOG_ADC_RESOLUTION
 /**
  * @brief Default resolution (in bits) of the voltage measurement
  *
  * The default for all boards is 10, use a build flag to change this, if
  * necessary.
  */
-#define ANALOG_EC_ADC_RESOLUTION 10
-#endif  // ANALOG_EC_ADC_RESOLUTION
+#define ANALOG_ADC_RESOLUTION 10
+#endif  // ANALOG_ADC_RESOLUTION
 /// @brief The maximum possible value of the ADC - one less than the resolution
 /// shifted up one bit.
-#define ANALOG_EC_ADC_MAX ((1 << ANALOG_EC_ADC_RESOLUTION) - 1)
+#define ANALOG_ADC_MAX ((1 << ANALOG_ADC_RESOLUTION) - 1)
 /// @brief The maximum possible range of the ADC - the resolution shifted up one
 /// bit.
-#define ANALOG_EC_ADC_RANGE (1 << ANALOG_EC_ADC_RESOLUTION)
+#define ANALOG_ADC_RANGE (1 << ANALOG_ADC_RESOLUTION)
 
 /* clang-format off */
-#if !defined ANALOG_EC_ADC_REFERENCE_MODE
+#if !defined ANALOG_ADC_REFERENCE_MODE
 #if defined (ARDUINO_ARCH_AVR) || defined (DOXYGEN)
 /**
  * @brief The voltage reference mode for the processor's ADC.
@@ -240,7 +297,7 @@
  * For the best accuracy, use an `EXTERNAL` reference with the AREF pin
  * connected to the power supply for the EC sensor.
  */
-#define ANALOG_EC_ADC_REFERENCE_MODE DEFAULT
+#define ANALOG_ADC_REFERENCE_MODE DEFAULT
 #endif
 #if defined (ARDUINO_ARCH_SAMD) || defined (DOXYGEN)
 /**
@@ -261,70 +318,45 @@
  *
  * @see https://www.arduino.cc/reference/en/language/functions/analog-io/analogreference/
  */
-#define ANALOG_EC_ADC_REFERENCE_MODE AR_DEFAULT
+#define ANALOG_ADC_REFERENCE_MODE AR_DEFAULT
 #endif
-#if !defined ANALOG_EC_ADC_REFERENCE_MODE
+#if !defined ANALOG_ADC_REFERENCE_MODE
 #error The processor ADC reference type must be defined!
-#endif  // ANALOG_EC_ADC_REFERENCE_MODE
+#endif  // ANALOG_ADC_REFERENCE_MODE
 #endif  // ARDUINO_ARCH_SAMD
 /* clang-format on */
 
-#if !defined RSERIES_OHMS_DEF
-/**
- * @brief The default resistance (in ohms) of the measuring resistor.
- * This should not be less than 300 ohms when measuring EC in water.
- */
-#define RSERIES_OHMS_DEF 499
-#endif  // RSERIES_OHMS_DEF
-
-#if !defined SENSOREC_KONST_DEF
-/**
- * @brief Cell Constant For EC Measurements.
- *
- * This should be measured following the calibration example on
- * https://hackaday.io/project/7008-fly-wars-a-hackers-solution-to-world-hunger/log/24646-three-dollar-ec-ppm-meter-arduino.
- *
- * Mine was around 2.9 with plugs being a standard size they should all be
- * around the same. If you get bad readings you can use the calibration script
- * and fluid to get a better estimate for K.
- * Default to 1.0, and can be set at startup.
- */
-#define SENSOREC_KONST_DEF 1.0
-#endif  // SENSOREC_KONST_DEF
 
 /**
- * @brief Class for the analog Electrical Conductivity monitor
+ * @brief Class for the analog Temperature and Relative Humidity monitor
  *
- * @ingroup sensor_analog_cond
+ * @ingroup sensor_analog_temprh
  */
-class AnalogElecConductivity : public Sensor {
+class AnalogCS500 : public Sensor {
  public:
     /**
-     * @brief Construct a new AnalogElecConductivity object.
+     * @brief Construct a new AnalogCS500 object.
      *
-     * @param powerPin The port pin providing power to the EC probe.
-     * Needs to be switched, and assumed to be same V as the dataPin's ADC.
-     * @param dataPin The processor ADC port pin to read the voltage from the EC
-     * probe.  Not all processor pins can be used as analog pins.  Those usable
+     * @param powerPin The port pin providing power to the temp/rH probe.
+     * Needs to be 12 V switched power pin (pin )
+     * @param tempPin The processor ADC port pin to read the voltage from the temp sensor.
+     * Not all processor pins can be used as analog pins.  Those usable
      * as analog pins generally are numbered with an "A" in front of the number
      * - ie, A1.
-     * @param Rseries_ohms The resistance of the resistor series (R) in the
-     * line; optional with default value of 499.
-     * @param sensorEC_Konst The cell constant for the sensing circuit; optional
-     * with default value of 2.88 - which is what has been measured for a
-     * typical standard sized lamp-type plug.
+     * @param rHPin The processor ADC port pin to read the voltage from the rH sensor.
+     * Not all processor pins can be used as analog pins.  Those usable
+     * as analog pins generally are numbered with an "A" in front of the number
+     * - ie, A1.
      * @param measurementsToAverage The number of measurements to average;
      * optional with default value of 1.
      */
-    AnalogElecConductivity(int8_t powerPin, int8_t dataPin,
-                           float   Rseries_ohms          = RSERIES_OHMS_DEF,
-                           float   sensorEC_Konst        = SENSOREC_KONST_DEF,
+    AnalogCS500(int8_t powerPin, int8_t tempPin, int8_t rHPin,
                            uint8_t measurementsToAverage = 1);
 
     /**
-     * @brief Destroy the AnalogElecConductivity object - no action needed.
+     * @brief Destroy the AnalogCS500 object - no action needed.
      */
-    ~AnalogElecConductivity();
+    ~AnalogCS500();
 
     /**
      * @brief Report the sensor info.
@@ -339,92 +371,134 @@ class AnalogElecConductivity : public Sensor {
     bool addSingleMeasurementResult(void) override;
 
     /**
-     * @brief Set EC constants for internal calculations.
-     * Needs to be set at startup if different from defaults
-     *
-     * @param sourceResistance_ohms series R used in calculations for EC
-     *
-     * other possible K, not specified yet:
-     *    float  appliedV_V,
-     *    uint8_t probeType
-     */
-    void setEC_k(float sourceResistance_ohms) {
-        _Rseries_ohms = sourceResistance_ohms;
-    }
-
-    /**
-     * @brief reads the calculated EC from an analog pin using the analog pin
+     * @brief reads the calculated Temperature from an analog pin using the analog pin
      * number set in the constructor.
      *
-     * @return The electrical conductance value
+     * @return The temperature in degress Celsius
      */
-    float readEC(void);
+    float readTemp(void);
     /**
-     * @brief reads the calculated EC from an analog pin.
+     * @brief reads the calculated Temperature from an analog pin using the analog pin
+     * number set in the constructor.
      *
-     * @param analogPinNum Analog port pin number
-     * @return The electrical conductance value
+     * @return The temperature in degress Celsius
+    */
+    float readTemp(uint8_t analogPinNum);
+
+    /**
+     * @brief reads the calculated rH from an analog pin using the analog pin
+     * number set in the constructor.
+     *
+     * @return The relative humidity in %
      */
-    float readEC(uint8_t analogPinNum);
+    float readRH(void);
+    /**
+     * @brief reads the calculated rH from an analog pin using the analog pin
+     * number set in the constructor.
+     *
+     * @return The relative humidity in %
+     */
+    float readRH(uint8_t analogPinNum);
+
 
  private:
-    int8_t _EcPowerPin;
-    int8_t _EcAdcPin;
+    int8_t _PowerPin;
+    int8_t _tempAdcPin;
+    int8_t _rhAdcPin;
 
-    float* _ptrWaterTemperature_C;
-
-    /// @brief The resistance of the circiut resistor plus any series port
-    /// resistance
-    float _Rseries_ohms = RSERIES_OHMS_DEF;
-
-    /// @brief the cell constant for the circuit
-    float _sensorEC_Konst = SENSOREC_KONST_DEF;
 };
 
 /**
- * @brief The variable class used for electricalConductivity measured using an
- * analog pin connected to electrodes submerged in the medium
+ * @brief The variable class used for Temperature and Relative Humidity measured 
+ * using analog pins connected to CS500 sensor
  *
- * @ingroup sensor_analog_cond
+ * @ingroup sensor_analog_temprh
  *
  */
-class AnalogElecConductivity_EC : public Variable {
+class AnalogCS500_Temp : public Variable {
  public:
     /**
-     * @brief Construct a new  AnalogElecConductivity_EC object.
+     * @brief Construct a new  AnalogCS500_Temp object.
      *
-     * @param parentSense The parent AnalogElecConductivity providing the result
+     * @param parentSense The parent AnalogCS500 providing the result
      * values.
      * @param uuid A universally unique identifier (UUID or GUID) for the
      * variable; optional with the default value of an empty string.
      * @param varCode A short code to help identify the variable in files;
-     * optional with a default value of "anlgEc".
+     * optional with a default value of "degC".
      */
-    AnalogElecConductivity_EC(
-        AnalogElecConductivity* parentSense, const char* uuid = "",
-        const char* varCode = ANALOGELECCONDUCTIVITY_EC_DEFAULT_CODE)
+    AnalogCS500_Temp(
+        AnalogCS500* parentSense, const char* uuid = "",
+        const char* varCode = TEMP_DEGC_DEFAULT_CODE)
         : Variable(parentSense,
-                   (const uint8_t)ANALOGELECCONDUCTIVITY_EC_VAR_NUM,
-                   (uint8_t)ANALOGELECCONDUCTIVITY_EC_RESOLUTION,
-                   ANALOGELECCONDUCTIVITY_EC_VAR_NAME,
-                   ANALOGELECCONDUCTIVITY_EC_UNIT_NAME, varCode, uuid) {}
+                   (const uint8_t)TEMP_DEGC_VAR_NUM,
+                   (uint8_t)TEMP_DEGC_RESOLUTION,
+                   TEMP_DEGC_VAR_NAME,
+                   TEMP_DEGC_UNIT_NAME, varCode, uuid) {}
 
     /**
-     * @brief Construct a new AnalogElecConductivity_EC object.
+     * @brief Construct a new AnalogCS500_Temp object.
      *
-     * @note This must be tied with a parent AnalogElecConductivity before it
+     * @note This must be tied with a parent AnalogCS500 before it
      * can be used.
      */
-    AnalogElecConductivity_EC()
-        : Variable((const uint8_t)ANALOGELECCONDUCTIVITY_EC_VAR_NUM,
-                   (uint8_t)ANALOGELECCONDUCTIVITY_EC_RESOLUTION,
-                   ANALOGELECCONDUCTIVITY_EC_VAR_NAME,
-                   ANALOGELECCONDUCTIVITY_EC_UNIT_NAME,
-                   ANALOGELECCONDUCTIVITY_EC_DEFAULT_CODE) {}
+    AnalogCS500_Temp()
+        : Variable((const uint8_t)TEMP_DEGC_VAR_NUM,
+                   (uint8_t)TEMP_DEGC_RESOLUTION,
+                   TEMP_DEGC_VAR_NAME,
+                   TEMP_DEGC_UNIT_NAME,
+                   TEMP_DEGC_DEFAULT_CODE) {}
     /**
-     * @brief Destroy the AnalogElecConductivity_EC object - no action needed.
+     * @brief Destroy the AnalogCS500_Temp object - no action needed.
      */
-    ~AnalogElecConductivity_EC() {}
+    ~AnalogCS500_Temp() {}
 };
+
+/**
+ * @brief The variable class used for Temperature and Relative Humidity measured 
+ * using analog pins connected to CS500 sensor
+ *
+ * @ingroup sensor_analog_temprh
+ *
+ */
+class AnalogCS500_rH : public Variable {
+ public:
+    /**
+     * @brief Construct a new  AnalogCS500_Temp object.
+     *
+     * @param parentSense The parent AnalogCS500 providing the result
+     * values.
+     * @param uuid A universally unique identifier (UUID or GUID) for the
+     * variable; optional with the default value of an empty string.
+     * @param varCode A short code to help identify the variable in files;
+     * optional with a default value of "degC".
+     */
+    AnalogCS500_rH(
+        AnalogCS500* parentSense, const char* uuid = "",
+        const char* varCode = RH_PERCENT_DEFAULT_CODE)
+        : Variable(parentSense,
+                   (const uint8_t)RH_PERCENT_VAR_NUM,
+                   (uint8_t)RH_PERCENT_RESOLUTION,
+                   RH_PERCENT_VAR_NAME,
+                   RH_PERCENT_UNIT_NAME, varCode, uuid) {}
+
+    /**
+     * @brief Construct a new AnalogCS500_Temp object.
+     *
+     * @note This must be tied with a parent AnalogCS500 before it
+     * can be used.
+     */
+    AnalogCS500_rH()
+        : Variable((const uint8_t)RH_PERCENT_VAR_NUM,
+                   (uint8_t)RH_PERCENT_RESOLUTION,
+                   RH_PERCENT_VAR_NAME,
+                   RH_PERCENT_UNIT_NAME,
+                   RH_PERCENT_DEFAULT_CODE) {}
+    /**
+     * @brief Destroy the AnalogCS500_Temp object - no action needed.
+     */
+    ~AnalogCS500_rH() {}
+};
+
 /**@}*/
-#endif  // SRC_SENSORS_ANALOGELECCONDUCTIVITY_H_
+#endif  // SRC_SENSORS_CS500_H_
