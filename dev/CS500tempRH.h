@@ -147,10 +147,10 @@
 #define TEMP_VOLTAGE_VAR_NAME "Voltage"
 /// @brief Variable unit name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
-/// "volts"
-#define TEMP_VOLTAGE_UNIT_NAME "volts"
-/// @brief Default variable short code; "V"
-#define TEMP_VOLTAGE_DEFAULT_CODE "V"
+/// "millivolts"
+#define TEMP_VOLTAGE_UNIT_NAME "millivolts"
+/// @brief Default variable short code; "mV"
+#define TEMP_VOLTAGE_DEFAULT_CODE "mV"
 /**@}*/
 
 //  Make a section for rH voltage
@@ -177,10 +177,10 @@
 #define RH_VOLTAGE_VAR_NAME "Voltage"
 /// @brief Variable unit name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
-/// "volts"
-#define RH_VOLTAGE_UNIT_NAME "volts"
-/// @brief Default variable short code; "V"
-#define RH_VOLTAGE_DEFAULT_CODE "V"
+/// "millivolts"
+#define RH_VOLTAGE_UNIT_NAME "millivolts"
+/// @brief Default variable short code; "mV"
+#define RH_VOLTAGE_DEFAULT_CODE "mV"
 /**@}*/
 
 // Make a section for calculated temp C
