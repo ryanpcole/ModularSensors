@@ -44,10 +44,6 @@
  * must be converted into a high resolution digital signal.  See the
  * [ADS1115 page](@ref analog_group) for details on the conversion.
  *
- * @note The Vcc going to the circuit (~12V) can and will vary, as battery
- * level gets low.  If possible, you should use setup the processor to use an
- * external reference (`-D ADC_REFERENCE_MODE=EXTEERNAL`) and tie
- * the Aref pin to the sensor power pin.
  *
  * @note The analog reference of the Mayfly is not broken out (and is tied to
  * ground).  If using a Mayfly, you have no choice by to use the internal analog
@@ -274,20 +270,18 @@ class CS500tempRH : public Sensor {
      * - The ADS1x15 requires an input voltage of 2.0-5.5V, but this library
      * assumes the ADS is powered with 3.3V.
 
-     * @param tempPin The processor ADC port pin to read the voltage from the temp sensor.
-     * Not all processor pins can be used as analog pins.  Those usable
-     * as analog pins generally are numbered with an "A" in front of the number
-     * - ie, A1.
-     * @param rHPin The processor ADC port pin to read the voltage from the rH sensor.
-     * Not all processor pins can be used as analog pins.  Those usable
-     * as analog pins generally are numbered with an "A" in front of the number
-     * - ie, A1.
+     * @param adsChannelTemp The analog data channel _on the TI ADS1115_ that the
+     * temp sensor is connected to (0-3).
+     * @param adsChannel The analog data channel _on the TI ADS1115_ that the
+     * rH sensor is connected to (0-3).
      * @param i2cAddress The I2C address of the ADS 1x15, default is 0x48 (ADDR
      * = GND)
      * @param measurementsToAverage The number of measurements to average;
      * optional with default value of 1.
      */
-    CS500tempRH(int8_t powerPin, int8_t tempPin, int8_t rHPin,
+    CS500tempRH(int8_t powerPin,
+                        uint8_t adsChannelTemp,
+                        uint8_t adsChannelRH,
                         uint8_t i2cAddress            = ADS1115_ADDRESS,  
                         uint8_t measurementsToAverage = 1);
 
@@ -341,8 +335,8 @@ class CS500tempRH : public Sensor {
 
  private:
     int8_t _PowerPin;
-    int8_t _tempAdcPin;
-    int8_t _rhAdcPin;
+    uint8_t _adsChannelTemp;
+    uint8_t _adsChannelRH;
     uint8_t _i2cAddress;
 
 };

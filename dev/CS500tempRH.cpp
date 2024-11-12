@@ -14,7 +14,8 @@
 
 // For Mayfly version; the battery resistor depends on it
 CS500tempRH::CS500tempRH(int8_t powerPin, int8_t tempPin, int8_t rHPin,
-                                               uint8_t measurementsToAverage)
+                                uint8_t i2cAddress,
+                                uint8_t measurementsToAverage)
     : Sensor("CS500tempRH", CS500_NUM_VARIABLES,
              CS500_WARM_UP_TIME_MS,
              CS500_STABILIZATION_TIME_MS,
