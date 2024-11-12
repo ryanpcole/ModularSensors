@@ -32,13 +32,13 @@
  * First, we need to convert the bit reading of the ADC into volts based on the
  * range of the ADC (1 bit more than the resolution):
  *
- * `meas_voltage = (analog_ref_voltage * raw_adc_bits) / ANALOG_CS500_ADC_RANGE`
+ * `meas_voltage = (analog_ref_voltage * raw_adc_bits) / ADC_RANGE`
  *
  * Assuming the voltage of the ADC reference is the same as that used to power
  * the EC resistor circuit we can replace the reference voltage with the sensor
  * power voltage:
  *
- * `meas_voltage = (sensor_power_voltage * raw_adc_bits) / ANALOG_CS500_ADC_RANGE`
+ * `meas_voltage = (sensor_power_voltage * raw_adc_bits) / ADC_RANGE`
  *
  * @note The Vcc going to the circuit (~12V) can and will vary, as battery
  * level gets low.  If possible, you should use setup the processor to use an
@@ -61,12 +61,12 @@
  * https://s.campbellsci.com/documents/us/manuals/cs500.pdf
  *
  * @section sensor_analog_temprh_flags Build flags
- * - `-D CS500_ADC_RESOLUTION=##`
+ * - `-D ADC_RESOLUTION=##`
  *      - used to set the resolution of the processor ADC
- *      - @see #CS500_ADC_RESOLUTION
- * - `-D CS500_ADC_REFERENCE_MODE=xxx`
+ *      - @see #ADC_RESOLUTION
+ * - `-D ADC_REFERENCE_MODE=xxx`
  *      - used to set the processor ADC value reference mode
- *      - @see #CS500_ADC_REFERENCE_MODE
+ *      - @see #ADC_REFERENCE_MODE
  *
  * @section sensor_cs500_ctor Sensor Constructor
  * {{ @ref CS500::CS500 }}
@@ -80,10 +80,10 @@
 #define SRC_SENSORS_CS500_H_
 
 #ifdef MS_CS500_DEBUG
-#define MS_DEBUGGING_STD "AnalogCS500"
+#define MS_DEBUGGING_STD "CS500tempRH"
 #endif
 #ifdef MS_CS500_DEBUG_DEEP
-#define MS_DEBUGGING_DEEP "AnalogCS500"
+#define MS_DEBUGGING_DEEP "CS500tempRH"
 #endif
 // Included Dependencies
 #include "ModSensorDebugger.h"
@@ -259,24 +259,24 @@
 
 
 
-#if !defined ANALOG_ADC_RESOLUTION
+#if !defined ADC_RESOLUTION
 /**
  * @brief Default resolution (in bits) of the voltage measurement
  *
  * The default for all boards is 10, use a build flag to change this, if
  * necessary.
  */
-#define ANALOG_ADC_RESOLUTION 10
+#define ADC_RESOLUTION 10
 #endif  // ANALOG_ADC_RESOLUTION
 /// @brief The maximum possible value of the ADC - one less than the resolution
 /// shifted up one bit.
-#define ANALOG_ADC_MAX ((1 << ANALOG_ADC_RESOLUTION) - 1)
+#define ADC_MAX ((1 << ADC_RESOLUTION) - 1)
 /// @brief The maximum possible range of the ADC - the resolution shifted up one
 /// bit.
-#define ANALOG_ADC_RANGE (1 << ANALOG_ADC_RESOLUTION)
+#define ADC_RANGE (1 << ANALOG_ADC_RESOLUTION)
 
 /* clang-format off */
-#if !defined ANALOG_ADC_REFERENCE_MODE
+#if !defined ADC_REFERENCE_MODE
 #if defined (ARDUINO_ARCH_AVR) || defined (DOXYGEN)
 /**
  * @brief The voltage reference mode for the processor's ADC.
@@ -297,7 +297,7 @@
  * For the best accuracy, use an `EXTERNAL` reference with the AREF pin
  * connected to the power supply for the EC sensor.
  */
-#define ANALOG_ADC_REFERENCE_MODE DEFAULT
+#define ADC_REFERENCE_MODE DEFAULT
 #endif
 #if defined (ARDUINO_ARCH_SAMD) || defined (DOXYGEN)
 /**
@@ -318,11 +318,11 @@
  *
  * @see https://www.arduino.cc/reference/en/language/functions/analog-io/analogreference/
  */
-#define ANALOG_ADC_REFERENCE_MODE AR_DEFAULT
+#define ADC_REFERENCE_MODE AR_DEFAULT
 #endif
-#if !defined ANALOG_ADC_REFERENCE_MODE
+#if !defined ADC_REFERENCE_MODE
 #error The processor ADC reference type must be defined!
-#endif  // ANALOG_ADC_REFERENCE_MODE
+#endif  // ADC_REFERENCE_MODE
 #endif  // ARDUINO_ARCH_SAMD
 /* clang-format on */
 
@@ -332,10 +332,10 @@
  *
  * @ingroup sensor_analog_temprh
  */
-class AnalogCS500 : public Sensor {
+class CS500tempRH : public Sensor {
  public:
     /**
-     * @brief Construct a new AnalogCS500 object.
+     * @brief Construct a new CS500tempRH object.
      *
      * @param powerPin The port pin providing power to the temp/rH probe.
      * Needs to be 12 V switched power pin (pin )
@@ -350,13 +350,13 @@ class AnalogCS500 : public Sensor {
      * @param measurementsToAverage The number of measurements to average;
      * optional with default value of 1.
      */
-    AnalogCS500(int8_t powerPin, int8_t tempPin, int8_t rHPin,
+    CS500tempRH(int8_t powerPin, int8_t tempPin, int8_t rHPin,
                            uint8_t measurementsToAverage = 1);
 
     /**
-     * @brief Destroy the AnalogCS500 object - no action needed.
+     * @brief Destroy the CS500tempRH object - no action needed.
      */
-    ~AnalogCS500();
+    ~CS500tempRH();
 
     /**
      * @brief Report the sensor info.
@@ -415,20 +415,20 @@ class AnalogCS500 : public Sensor {
  * @ingroup sensor_analog_temprh
  *
  */
-class AnalogCS500_Temp : public Variable {
+class CS500tempRH_Temp : public Variable {
  public:
     /**
-     * @brief Construct a new  AnalogCS500_Temp object.
+     * @brief Construct a new  CS500tempRH_Temp object.
      *
-     * @param parentSense The parent AnalogCS500 providing the result
+     * @param parentSense The parent CS500tempRH providing the result
      * values.
      * @param uuid A universally unique identifier (UUID or GUID) for the
      * variable; optional with the default value of an empty string.
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    AnalogCS500_Temp(
-        AnalogCS500* parentSense, const char* uuid = "",
+    CS500tempRH_Temp(
+        CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = TEMP_DEGC_DEFAULT_CODE)
         : Variable(parentSense,
                    (const uint8_t)TEMP_DEGC_VAR_NUM,
@@ -437,21 +437,21 @@ class AnalogCS500_Temp : public Variable {
                    TEMP_DEGC_UNIT_NAME, varCode, uuid) {}
 
     /**
-     * @brief Construct a new AnalogCS500_Temp object.
+     * @brief Construct a new CS500tempRH_Temp object.
      *
-     * @note This must be tied with a parent AnalogCS500 before it
+     * @note This must be tied with a parent CS500tempRH before it
      * can be used.
      */
-    AnalogCS500_Temp()
+    CS500tempRH_Temp()
         : Variable((const uint8_t)TEMP_DEGC_VAR_NUM,
                    (uint8_t)TEMP_DEGC_RESOLUTION,
                    TEMP_DEGC_VAR_NAME,
                    TEMP_DEGC_UNIT_NAME,
                    TEMP_DEGC_DEFAULT_CODE) {}
     /**
-     * @brief Destroy the AnalogCS500_Temp object - no action needed.
+     * @brief Destroy the CS500tempRH_Temp object - no action needed.
      */
-    ~AnalogCS500_Temp() {}
+    ~CS500tempRH_Temp() {}
 };
 
 /**
@@ -461,20 +461,20 @@ class AnalogCS500_Temp : public Variable {
  * @ingroup sensor_analog_temprh
  *
  */
-class AnalogCS500_rH : public Variable {
+class CS500tempRH_rH : public Variable {
  public:
     /**
-     * @brief Construct a new  AnalogCS500_Temp object.
+     * @brief Construct a new  CS500tempRH_Temp object.
      *
-     * @param parentSense The parent AnalogCS500 providing the result
+     * @param parentSense The parent CS500tempRH providing the result
      * values.
      * @param uuid A universally unique identifier (UUID or GUID) for the
      * variable; optional with the default value of an empty string.
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    AnalogCS500_rH(
-        AnalogCS500* parentSense, const char* uuid = "",
+    CS500tempRH_rH(
+        CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = RH_PERCENT_DEFAULT_CODE)
         : Variable(parentSense,
                    (const uint8_t)RH_PERCENT_VAR_NUM,
@@ -483,21 +483,21 @@ class AnalogCS500_rH : public Variable {
                    RH_PERCENT_UNIT_NAME, varCode, uuid) {}
 
     /**
-     * @brief Construct a new AnalogCS500_Temp object.
+     * @brief Construct a new CS500tempRH_Temp object.
      *
-     * @note This must be tied with a parent AnalogCS500 before it
+     * @note This must be tied with a parent CS500tempRH before it
      * can be used.
      */
-    AnalogCS500_rH()
+    CS500tempRH_rH()
         : Variable((const uint8_t)RH_PERCENT_VAR_NUM,
                    (uint8_t)RH_PERCENT_RESOLUTION,
                    RH_PERCENT_VAR_NAME,
                    RH_PERCENT_UNIT_NAME,
                    RH_PERCENT_DEFAULT_CODE) {}
     /**
-     * @brief Destroy the AnalogCS500_Temp object - no action needed.
+     * @brief Destroy the CS500tempRH_Temp object - no action needed.
      */
-    ~AnalogCS500_rH() {}
+    ~CS500tempRH_rH() {}
 };
 
 /**@}*/
