@@ -1,6 +1,6 @@
 /** =========================================================================
- * @file simple_logging.ino
- * @brief A simple data logging example.
+ * @file CS500_logging.ino
+ * @brief A simple data logging example for connecting the CS500 temp/rH sensor
  *
  * @author Ryan Cole
  * @copyright Stroud Water Research Center
@@ -89,90 +89,52 @@ MaximDS3231 ds3231(1);
 //   https://github.com/EnviroDIY/ModularSensors/wiki#these-sensors-are-currently-supported
 //   or can be copied from the `menu_a_la_carte.ino` example
 
-//#if defined BUILD_SENSOR_CS500
 // ==========================================================================
-//   CS500 Temperature and Relative Humidity using analog pins
+//  Campbell OBS 3 / OBS 3+ Analog Turbidity Sensor
 // ==========================================================================
-/** Start [CS500 Temp RH] */
+/** Start [campbell_obs3] */
 #include <dev/CS500tempRH.h>
 
-const int8_t CS500pwrPin   = A4;  // Sw12v Power pin (-1 if continuously powered)
-const int8_t CS500TempPin = A0;  // Data pin for temp sensor
-const int8_t CS500RHPin = A1;    // Data pin for RH sensor
+// NOTE: Use -1 for any pins that don't apply or aren't being used.
+const int8_t  CS500Power          = sensorPowerPin;  // Power pin
+const uint8_t CS500NumberReadings = 10;
+const uint8_t CS500ADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
 
-// Create a CS500 sensor object
-CS500TempRH ;
-AnalogElecConductivity analogEC_phy(ECpwrPin, ECdataPin1);
+const int8_t CS500TempADSChannel = 0;  // ADS channel for temperature sensor
+const int8_t CS500RHADSChannel = 1;  // ADS channel for humidity sensor
 
-// Create a conductivity variable pointer for the analog sensor
-Variable* analogEc_cond = new AnalogElecConductivity_EC(
-    &analogEC_phy, "12345678-abcd-1234-ef00-1234567890ab");
+// Create a CS500 Sensor object
+CS500tempRH cs500(CS500Power, 
+                    CS500TempADSChannel, CS500RHADSChannel, 
+                        CS500ADSi2c_addr, CS500NumberReadings);
 
-// Create a calculated variable for the temperature compensated conductivity
-// (that is, the specific conductance).  For this example, we will use the
-// temperature measured by the Maxim DS18 saved as ds18Temp several sections
-// above this.  You could use the temperature returned by any other water
-// temperature sensor if desired.  **DO NOT** use your logger board temperature
-// (ie, from the DS3231) to calculate specific conductance!
-float calculateAnalogSpCond(void) {
-    float spCond          = -9999;  // Always safest to start with a bad value
-    float waterTemp       = ds18Temp->getValue();
-    float rawCond         = analogEc_cond->getValue();
-    float temperatureCoef = 0.019;
-    // ^^ Linearized temperature correction coefficient per degrees Celsius.
-    // The value of 0.019 comes from measurements reported here:
-    // Hayashi M. Temperature-electrical conductivity relation of water for
-    // environmental monitoring and geophysical data inversion. Environ Monit
-    // Assess. 2004 Aug-Sep;96(1-3):119-28.
-    // doi: 10.1023/b:emas.0000031719.83065.68. PMID: 15327152.
-    if (waterTemp != -9999 && rawCond != -9999) {
-        // make sure both inputs are good
-        spCond = rawCond / (1 + temperatureCoef * (waterTemp - 25.0));
-    }
-    return spCond;
-}
-
-// Properties of the calculated variable
-// The number of digits after the decimal place
-const uint8_t analogSpCondResolution = 0;
-// This must be a value from http://vocabulary.odm2.org/variablename/
-const char* analogSpCondName = "specificConductance";
-// This must be a value from http://vocabulary.odm2.org/units/
-const char* analogSpCondUnit = "microsiemenPerCentimeter";
-// A short code for the variable
-const char* analogSpCondCode = "anlgSpCond";
-// The (optional) universallly unique identifier
-const char* analogSpCondUUID = "12345678-abcd-1234-ef00-1234567890ab";
-
-// Finally, Create the specific conductance variable and return a pointer to it
-Variable* analogEc_spcond = new Variable(
-    calculateAnalogSpCond, analogSpCondResolution, analogSpCondName,
-    analogSpCondUnit, analogSpCondCode, analogSpCondUUID);
-/** End [analog_elec_conductivity] */
-//#endif
-
+// Create turbidity and voltage variable pointers for the low range  of the OBS3
+Variable* cs500tempdegC = new CS500tempRH_Temp(
+    &cs500, "12345678-abcd-1234-ef00-1234567890ab", "TempdegC");
+Variable* cs500RHpct = new CS500tempRH_rH(
+    &cs500, "12345678-abcd-1234-ef00-1234567890ab", "rHpct");
+/** End [campbell_obs3] */
 
 
 
 // ==========================================================================
 //  Creating the Variable Array[s] and Filling with Variable Objects
 // ==========================================================================
-/** Start [variable_arrays] */
+
+/** Start [variables_pre_named] */
+// Version 3: Fill array with already created and named variable pointers
 Variable* variableList[] = {
-    new ProcessorStats_SampleNumber(&mcuBoard),
-    new ProcessorStats_FreeRam(&mcuBoard),
-    new ProcessorStats_Battery(&mcuBoard), new MaximDS3231_Temp(&ds3231)
-    // Additional sensor variables can be added here, by copying the syntax
-    //   for creating the variable pointer (FORM1) from the
-    //   `menu_a_la_carte.ino` example
-    // The example code snippets in the wiki are primarily FORM2.
+    mcuBoardVersion,
+    ds3231,
+    cs500tempdegC,
+    cs500RHpct
 };
 // Count up the number of pointers in the array
 int variableCount = sizeof(variableList) / sizeof(variableList[0]);
-
 // Create the VariableArray object
-VariableArray varArray;
-/** End [variable_arrays] */
+VariableArray varArray(variableCount, variableList);
+/** End [variables_pre_named] */
+
 
 
 // ==========================================================================
