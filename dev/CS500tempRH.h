@@ -39,10 +39,14 @@
  * power voltage:
  *
  * `meas_voltage = (sensor_power_voltage * raw_adc_bits) / ADC_RANGE`
+ * 
+ * @note  * Before applying any temp or rH calibration, the analog output 
+ * must be converted into a high resolution digital signal.  See the
+ * [ADS1115 page](@ref analog_group) for details on the conversion.
  *
  * @note The Vcc going to the circuit (~12V) can and will vary, as battery
  * level gets low.  If possible, you should use setup the processor to use an
- * external reference (`-D ANALOG_EC_ADC_REFERENCE_MODE=EXTEERNAL`) and tie
+ * external reference (`-D ADC_REFERENCE_MODE=EXTEERNAL`) and tie
  * the Aref pin to the sensor power pin.
  *
  * @note The analog reference of the Mayfly is not broken out (and is tied to
@@ -61,13 +65,7 @@
  * https://s.campbellsci.com/documents/us/manuals/cs500.pdf
  *
  * @section sensor_analog_temprh_flags Build flags
- * - `-D ADC_RESOLUTION=##`
- *      - used to set the resolution of the processor ADC
- *      - @see #ADC_RESOLUTION
- * - `-D ADC_REFERENCE_MODE=xxx`
- *      - used to set the processor ADC value reference mode
- *      - @see #ADC_REFERENCE_MODE
- *
+ * 
  * @section sensor_cs500_ctor Sensor Constructor
  * {{ @ref CS500::CS500 }}
  *
@@ -144,7 +142,7 @@
  *
  * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define TEMP_VOLTAGE_RESOLUTION 3
+#define TEMP_VOLTAGE_RESOLUTION 4
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define TEMP_VOLTAGE_VAR_NUM 0
 /// @brief Variable name in
@@ -174,7 +172,7 @@
  *
  * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define RH_VOLTAGE_RESOLUTION 3
+#define RH_VOLTAGE_RESOLUTION 4
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define RH_VOLTAGE_VAR_NUM 1
 /// @brief Variable name in
@@ -253,79 +251,8 @@
 #define RH_PERCENT_DEFAULT_CODE "rH%"
 /**@}*/
 
-
-
-
-
-
-
-#if !defined ADC_RESOLUTION
-/**
- * @brief Default resolution (in bits) of the voltage measurement
- *
- * The default for all boards is 10, use a build flag to change this, if
- * necessary.
- */
-#define ADC_RESOLUTION 10
-#endif  // ANALOG_ADC_RESOLUTION
-/// @brief The maximum possible value of the ADC - one less than the resolution
-/// shifted up one bit.
-#define ADC_MAX ((1 << ADC_RESOLUTION) - 1)
-/// @brief The maximum possible range of the ADC - the resolution shifted up one
-/// bit.
-#define ADC_RANGE (1 << ANALOG_ADC_RESOLUTION)
-
-/* clang-format off */
-#if !defined ADC_REFERENCE_MODE
-#if defined (ARDUINO_ARCH_AVR) || defined (DOXYGEN)
-/**
- * @brief The voltage reference mode for the processor's ADC.
- *
- * For an AVR board, this must be one of:
- * - `DEFAULT`: the default built-in analog reference of 5 volts (on 5V Arduino
- * boards) or 3.3 volts (on 3.3V Arduino boards)
- * - `INTERNAL`: a built-in reference, equal to 1.1 volts on the ATmega168 or
- * ATmega328P and 2.56 volts on the ATmega32U4 and ATmega8 (not available on the
- * Arduino Mega)
- * - `INTERNAL1V1`: a built-in 1.1V reference (Arduino Mega only)
- * - `INTERNAL2V56`: a built-in 2.56V reference (Arduino Mega only)
- * - `EXTERNAL`: the voltage applied to the AREF pin (0 to 5V only) is used as the
- * reference.
- *
- * If not set on an AVR board `DEFAULT` is used.
- *
- * For the best accuracy, use an `EXTERNAL` reference with the AREF pin
- * connected to the power supply for the EC sensor.
- */
-#define ADC_REFERENCE_MODE DEFAULT
-#endif
-#if defined (ARDUINO_ARCH_SAMD) || defined (DOXYGEN)
-/**
- * @brief The voltage reference mode for the processor's ADC.
- *
- * For a SAMD board, this must be one of:
- * - `AR_DEFAULT`: the default built-in analog reference of 3.3V
- * - `AR_INTERNAL`: a built-in 2.23V reference
- * - `AR_INTERNAL1V0`: a built-in 1.0V reference
- * - `AR_INTERNAL1V65`: a built-in 1.65V reference
- * - `AR_INTERNAL2V23`: a built-in 2.23V reference
- * - `AR_EXTERNAL`: the voltage applied to the AREF pin is used as the reference
- *
- * If not set on an SAMD board `AR_DEFAULT` is used.
- *
- * For the best accuracy, use an `EXTERNAL` reference with the AREF pin
- * connected to the power supply for the EC sensor.
- *
- * @see https://www.arduino.cc/reference/en/language/functions/analog-io/analogreference/
- */
-#define ADC_REFERENCE_MODE AR_DEFAULT
-#endif
-#if !defined ADC_REFERENCE_MODE
-#error The processor ADC reference type must be defined!
-#endif  // ADC_REFERENCE_MODE
-#endif  // ARDUINO_ARCH_SAMD
-/* clang-format on */
-
+/// @brief The assumed address of the ADS1115, 1001 000 (ADDR = GND)
+#define ADS1115_ADDRESS 0x48
 
 /**
  * @brief Class for the analog Temperature and Relative Humidity monitor
@@ -336,9 +263,17 @@ class CS500tempRH : public Sensor {
  public:
     /**
      * @brief Construct a new CS500tempRH object.
-     *
+     *     
+     * @note ModularSensors only supports connecting the ADS1x15 to the primary
+     * hardware I2C instance defined in the Arduino core.  Connecting the ADS to
+     * a secondary hardware or software I2C instance is *not* supported!
+
      * @param powerPin The port pin providing power to the temp/rH probe.
-     * Needs to be 12 V switched power pin (pin )
+     * Needs to be 12 V switched power pin (pin XX)
+     * 
+     * - The ADS1x15 requires an input voltage of 2.0-5.5V, but this library
+     * assumes the ADS is powered with 3.3V.
+
      * @param tempPin The processor ADC port pin to read the voltage from the temp sensor.
      * Not all processor pins can be used as analog pins.  Those usable
      * as analog pins generally are numbered with an "A" in front of the number
@@ -347,11 +282,14 @@ class CS500tempRH : public Sensor {
      * Not all processor pins can be used as analog pins.  Those usable
      * as analog pins generally are numbered with an "A" in front of the number
      * - ie, A1.
+     * @param i2cAddress The I2C address of the ADS 1x15, default is 0x48 (ADDR
+     * = GND)
      * @param measurementsToAverage The number of measurements to average;
      * optional with default value of 1.
      */
     CS500tempRH(int8_t powerPin, int8_t tempPin, int8_t rHPin,
-                           uint8_t measurementsToAverage = 1);
+                        uint8_t i2cAddress            = ADS1115_ADDRESS,  
+                        uint8_t measurementsToAverage = 1);
 
     /**
      * @brief Destroy the CS500tempRH object - no action needed.
@@ -405,6 +343,7 @@ class CS500tempRH : public Sensor {
     int8_t _PowerPin;
     int8_t _tempAdcPin;
     int8_t _rhAdcPin;
+    uint8_t _i2cAddress;
 
 };
 

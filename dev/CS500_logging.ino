@@ -89,6 +89,69 @@ MaximDS3231 ds3231(1);
 //   https://github.com/EnviroDIY/ModularSensors/wiki#these-sensors-are-currently-supported
 //   or can be copied from the `menu_a_la_carte.ino` example
 
+//#if defined BUILD_SENSOR_CS500
+// ==========================================================================
+//   CS500 Temperature and Relative Humidity using analog pins
+// ==========================================================================
+/** Start [CS500 Temp RH] */
+#include <dev/CS500tempRH.h>
+
+const int8_t CS500pwrPin   = A4;  // Sw12v Power pin (-1 if continuously powered)
+const int8_t CS500TempPin = A0;  // Data pin for temp sensor
+const int8_t CS500RHPin = A1;    // Data pin for RH sensor
+
+// Create a CS500 sensor object
+CS500TempRH ;
+AnalogElecConductivity analogEC_phy(ECpwrPin, ECdataPin1);
+
+// Create a conductivity variable pointer for the analog sensor
+Variable* analogEc_cond = new AnalogElecConductivity_EC(
+    &analogEC_phy, "12345678-abcd-1234-ef00-1234567890ab");
+
+// Create a calculated variable for the temperature compensated conductivity
+// (that is, the specific conductance).  For this example, we will use the
+// temperature measured by the Maxim DS18 saved as ds18Temp several sections
+// above this.  You could use the temperature returned by any other water
+// temperature sensor if desired.  **DO NOT** use your logger board temperature
+// (ie, from the DS3231) to calculate specific conductance!
+float calculateAnalogSpCond(void) {
+    float spCond          = -9999;  // Always safest to start with a bad value
+    float waterTemp       = ds18Temp->getValue();
+    float rawCond         = analogEc_cond->getValue();
+    float temperatureCoef = 0.019;
+    // ^^ Linearized temperature correction coefficient per degrees Celsius.
+    // The value of 0.019 comes from measurements reported here:
+    // Hayashi M. Temperature-electrical conductivity relation of water for
+    // environmental monitoring and geophysical data inversion. Environ Monit
+    // Assess. 2004 Aug-Sep;96(1-3):119-28.
+    // doi: 10.1023/b:emas.0000031719.83065.68. PMID: 15327152.
+    if (waterTemp != -9999 && rawCond != -9999) {
+        // make sure both inputs are good
+        spCond = rawCond / (1 + temperatureCoef * (waterTemp - 25.0));
+    }
+    return spCond;
+}
+
+// Properties of the calculated variable
+// The number of digits after the decimal place
+const uint8_t analogSpCondResolution = 0;
+// This must be a value from http://vocabulary.odm2.org/variablename/
+const char* analogSpCondName = "specificConductance";
+// This must be a value from http://vocabulary.odm2.org/units/
+const char* analogSpCondUnit = "microsiemenPerCentimeter";
+// A short code for the variable
+const char* analogSpCondCode = "anlgSpCond";
+// The (optional) universallly unique identifier
+const char* analogSpCondUUID = "12345678-abcd-1234-ef00-1234567890ab";
+
+// Finally, Create the specific conductance variable and return a pointer to it
+Variable* analogEc_spcond = new Variable(
+    calculateAnalogSpCond, analogSpCondResolution, analogSpCondName,
+    analogSpCondUnit, analogSpCondCode, analogSpCondUUID);
+/** End [analog_elec_conductivity] */
+//#endif
+
+
 
 
 // ==========================================================================
