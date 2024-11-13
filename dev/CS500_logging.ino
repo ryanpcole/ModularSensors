@@ -93,7 +93,7 @@ MaximDS3231 ds3231(1);
 //  Campbell OBS 3 / OBS 3+ Analog Turbidity Sensor
 // ==========================================================================
 /** Start [campbell_obs3] */
-#include <dev/CS500tempRH.h>
+#include <CS500tempRH.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t  CS500Power          = sensorPowerPin;  // Power pin

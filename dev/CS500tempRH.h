@@ -302,39 +302,7 @@ class CS500tempRH : public Sensor {
      */
     bool addSingleMeasurementResult(void) override;
 
-    /**
-     * @brief reads the calculated Temperature from an analog pin using the analog pin
-     * number set in the constructor.
-     *
-     * @return The temperature in degress Celsius
-     */
-    float readTemp(void);
-    /**
-     * @brief reads the calculated Temperature from an analog pin using the analog pin
-     * number set in the constructor.
-     *
-     * @return The temperature in degress Celsius
-    */
-    float readTemp(uint8_t analogPinNum);
-
-    /**
-     * @brief reads the calculated rH from an analog pin using the analog pin
-     * number set in the constructor.
-     *
-     * @return The relative humidity in %
-     */
-    float readRH(void);
-    /**
-     * @brief reads the calculated rH from an analog pin using the analog pin
-     * number set in the constructor.
-     *
-     * @return The relative humidity in %
-     */
-    float readRH(uint8_t analogPinNum);
-
-
  private:
-    int8_t _PowerPin;
     uint8_t _adsChannelTemp;
     uint8_t _adsChannelRH;
     uint8_t _i2cAddress;
