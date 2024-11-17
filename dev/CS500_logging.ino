@@ -188,6 +188,18 @@ float getBatteryVoltage() {
     if (mcuBoard.sensorValues[PROCESSOR_BATTERY_VAR_NUM] == -9999) mcuBoard.update();
     return mcuBoard.sensorValues[PROCESSOR_BATTERY_VAR_NUM];
 }
+
+// Set the SW12v power pin high so it is constantly on for testing on a breadboard
+// Power the sensors;
+void power12v(int8_t sensorPowerPin) {
+    if (sensorPowerPin > 0) {
+    //Serial.println("Powering up sensors...");
+    // pinMode(sensorPowerPin, OUTPUT);
+    digitalWrite(sensorPowerPin, HIGH);
+    //delay(200);
+  }
+}
+
 /** End [working_functions] */
 
 
@@ -219,6 +231,15 @@ void setup() {
 
     pinMode(20, OUTPUT);  // for proper operation of the onboard flash memory
                           // chip's ChipSelect (Mayfly v1.0 and later)
+
+    /* Only use this if sensor power pin is set to -1 because you want the
+    switched power always on (useful for breadboard testing)
+    if (sensorPowerPin < 0) {
+        Serial.println("Powering up sensors...");
+        pinMode(22, OUTPUT);
+        digitalWrite(22, HIGH);
+    }
+    */
 
 
     // Set the timezones for the logger/data and the RTC
@@ -266,6 +287,8 @@ void setup() {
 // ==========================================================================
 /** Start [loop] */
 void loop() {
+
     dataLogger.logData();
+
 }
 /** End [loop] */

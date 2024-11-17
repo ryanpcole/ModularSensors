@@ -107,7 +107,7 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // We're allowing the ADS1115 library to do the bit-to-volts conversion
         // for us
         rH_mV =
-            ads.readADC_SingleEnded_V(_adsChannelRH) / 1000;  // Getting the reading
+            ads.readADC_SingleEnded_V(_adsChannelRH) * 1000;  // Getting the reading
         MS_DBG(F("  ads.readADC_SingleEnded_V("), _adsChannelRH, F("):"),
                rH_mV);
 
