@@ -1,5 +1,9 @@
 /** =========================================================================
- * @file DRWI_Mayfly1_WiFi.ino
+ * @example{lineno} DRWI_Mayfly1_WiFi.ino
+ * @copyright Stroud Water Research Center
+ * @license This example is published under the BSD-3 license.
+ * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ *
  * @brief Example for DRWI CitSci LTE sites.
  *
  * This example shows proper settings for the following configuration:
@@ -8,15 +12,7 @@
  * EnviroDIY ESP32 Wifi Bee module
  * Hydros21 CTD sensor
  *
- * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @copyright Stroud Water Research Center
- * This example is published under the BSD-3 license.
- *
-
- * Hardware Platform: EnviroDIY Mayfly Arduino Datalogger
- *
- * DISCLAIMER:
- * THIS CODE IS PROVIDED "AS IS" - NO WARRANTY IS GIVEN.
+ * @m_examplenavigation{example_drwi_mayfly1_wifi,}
  * ======================================================================= */
 
 // ==========================================================================
@@ -312,6 +308,8 @@ void setup() {
 
     // Begin the logger
     dataLogger.begin();
+    EnviroDIYPOST.begin(dataLogger, &modem.gsmClient, registrationToken,
+                        samplingFeature);
 
     // Note:  Please change these battery voltages to match your battery
     // Set up the sensors, except at lowest battery level

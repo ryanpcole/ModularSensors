@@ -1,16 +1,14 @@
 /** =========================================================================
- * @file logging_to_MMW.ino
+ * @example{lineno} logging_to_MMW.ino
+ * @copyright Stroud Water Research Center
+ * @license This example is published under the BSD-3 license.
+ * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ *
  * @brief Example logging data and publishing to Monitor My Watershed.
  *
- * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @copyright Stroud Water Research Center
- * This example is published under the BSD-3 license.
+ * See [the walkthrough page](@ref example_mmw) for detailed instructions.
  *
- * Build Environment: Visual Studio Code with PlatformIO
- * Hardware Platform: EnviroDIY Mayfly Arduino Datalogger
- *
- * DISCLAIMER:
- * THIS CODE IS PROVIDED "AS IS" - NO WARRANTY IS GIVEN.
+ * @m_examplenavigation{example_mmw,}
  * ======================================================================= */
 
 // ==========================================================================
@@ -255,7 +253,7 @@ void setup() {
 // Wait for USB connection to be established by PC
 // NOTE:  Only use this when debugging - if not connected to a PC, this
 // could prevent the script from starting
-#if defined SERIAL_PORT_USBVIRTUAL
+#if defined(SERIAL_PORT_USBVIRTUAL)
     while (!SERIAL_PORT_USBVIRTUAL && (millis() < 10000)) {
         // wait
     }
@@ -278,11 +276,11 @@ void setup() {
     Serial.println();
 
 // Allow interrupts for software serial
-#if defined SoftwareSerial_ExtInts_h
+#if defined(SoftwareSerial_ExtInts_h)
     enableInterrupt(softSerialRx, SoftwareSerial_ExtInts::handle_interrupt,
                     CHANGE);
 #endif
-#if defined NeoSWSerial_h
+#if defined(NeoSWSerial_h)
     enableInterrupt(neoSSerial1Rx, neoSSerial1ISR, CHANGE);
 #endif
 

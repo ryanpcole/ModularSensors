@@ -26,7 +26,7 @@
  * Profiling Probe. Classes for the GroPoint Profile GPLP-8 Soil Moisture &
  * Temperature Probe.
  *
- * @ingroup GroPoint_group
+ * @ingroup gropoint_group
  *
  * @tableofcontents
  * @m_footernavigation
@@ -34,7 +34,7 @@
  * @section sensor_gplp8_datasheet Sensor Datasheet
  * - [GroPoint Profile User Manual](https://www.gropoint.com/s/2625-N-T-GroPoint-Profile-User-Manual-V113.pdf), including Modbus Instructions.
  * - [GroPoint Profile Technical Info](https://www.gropoint.com/s/GroPoint-Profile-Technical-Info.pdf)
- * *
+ *
  * @section sensor_gplp8_ctor Sensor Constructor
  * {{ @ref GroPointGPLP8::GroPointGPLP8 }}
  *
@@ -56,11 +56,17 @@
 /** @ingroup sensor_gplp8 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_gplp8_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by GPLP8
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the GPLP8 can report 8 values.
 #define GPLP8_NUM_VARIABLES 21
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define GPLP8_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_gplp8_timing

@@ -14,14 +14,22 @@
 #ifndef SRC_MODSENSORINTERRUPTS_H_
 #define SRC_MODSENSORINTERRUPTS_H_
 
-#if defined(__AVR__) || defined(ARDUINO_ARCH_AVR) || defined __SAM3U4E__ ||    \
-    defined __SAM3X8E__ || defined __SAM3X8H__ || defined ARDUINO_SAMD_ZERO || \
-    defined __SAMD21G18A__ || defined __SAMD21J18A__
+#include <Arduino.h>
+
+#if defined(__AVR__) || defined(ARDUINO_ARCH_AVR)
 // #define LIBCALL_ENABLEINTERRUPT  // To prevent compiler/linker crashes
 #include <EnableInterrupt.h>  // To handle external and pin change interrupts
 #else
+/**
+ * @brief This define renames attachInterrupt as enableInterrupt to simplify
+ * switching between AVR and non-AVR processors.
+ */
 #define enableInterrupt(pin, userFunc, mode) \
     attachInterrupt(pin, userFunc, mode)
+/**
+ * @brief This define renames detachInterrupt as disableInterrupt to simplify
+ * switching between AVR and non-AVR processors.
+ */
 #define disableInterrupt(pin) detachInterrupt(pin)
 #endif
 
