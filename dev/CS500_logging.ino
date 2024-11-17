@@ -64,6 +64,16 @@ const int8_t sensorPowerPin = 22;  // MCU pin controlling main sensor power
 // Create the main processor chip "sensor" - for general metadata
 const char*    mcuBoardVersion = "v1.1";
 ProcessorStats mcuBoard(mcuBoardVersion);
+
+// Create sample number, battery voltage, and free RAM variable pointers for the
+// processor
+Variable* mcuBoardBatt = new ProcessorStats_Battery(
+    &mcuBoard, "12345678-abcd-1234-ef00-1234567890ab");
+Variable* mcuBoardAvailableRAM = new ProcessorStats_FreeRam(
+    &mcuBoard, "12345678-abcd-1234-ef00-1234567890ab");
+Variable* mcuBoardSampNo = new ProcessorStats_SampleNumber(
+    &mcuBoard, "12345678-abcd-1234-ef00-1234567890ab");
+
 /** End [processor_sensor] */
 
 
@@ -75,6 +85,10 @@ ProcessorStats mcuBoard(mcuBoardVersion);
 
 // Create a DS3231 sensor object, using this constructor function:
 MaximDS3231 ds3231(1);
+
+// Create a temperature variable pointer for the DS3231
+Variable* ds3231Temp =
+    new MaximDS3231_Temp(&ds3231, "12345678-abcd-1234-ef00-1234567890ab");
 /** End [ds3231] */
 
 
@@ -124,8 +138,9 @@ Variable* cs500RHpct = new CS500tempRH_rH(
 /** Start [variables_pre_named] */
 // Version 3: Fill array with already created and named variable pointers
 Variable* variableList[] = {
-    mcuBoardVersion,
-    ds3231,
+    mcuBoardSampNo,
+    mcuBoardBatt,
+    ds3231Temp,
     cs500tempdegC,
     cs500RHpct
 };
@@ -141,8 +156,8 @@ VariableArray varArray(variableCount, variableList);
 //  The Logger Object[s]
 // ==========================================================================
 /** Start [loggers] */
-// Create a logger instance
-Logger dataLogger;
+// Create a new logger instance
+Logger dataLogger(LoggerID, loggingInterval, &varArray);
 /** End [loggers] */
 
 
@@ -161,6 +176,13 @@ void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
         delay(rate);
     }
     digitalWrite(redLED, LOW);
+}
+
+// Uses the processor sensor object to read the battery voltage
+// NOTE: This will actually return the battery level from the previous update!
+float getBatteryVoltage() {
+    if (mcuBoard.sensorValues[PROCESSOR_BATTERY_VAR_NUM] == -9999) mcuBoard.update();
+    return mcuBoard.sensorValues[PROCESSOR_BATTERY_VAR_NUM];
 }
 /** End [working_functions] */
 
@@ -191,6 +213,10 @@ void setup() {
     // Blink the LEDs to show the board is on and starting up
     greenredflash();
 
+    pinMode(20, OUTPUT);  // for proper operation of the onboard flash memory
+                          // chip's ChipSelect (Mayfly v1.0 and later)
+
+
     // Set the timezones for the logger/data and the RTC
     // Logging in the given time zone
     Logger::setLoggerTimeZone(timeZone);
@@ -201,20 +227,31 @@ void setup() {
     dataLogger.setLoggerPins(wakePin, sdCardSSPin, sdCardPwrPin, buttonPin,
                              greenLED);
 
-    // Begin the variable array[s], logger[s], and publisher[s]
-    varArray.begin(variableCount, variableList);
-    dataLogger.begin(LoggerID, loggingInterval, &varArray);
+    // Begin the logger
+    dataLogger.begin();
 
-    // Set up the sensors
-    Serial.println(F("Setting up sensors..."));
-    varArray.setupSensors();
+    // Note:  Please change these battery voltages to match your battery
+    // Set up the sensors, except at lowest battery level
+    if (getBatteryVoltage() > 3.4) {
+        Serial.println(F("Setting up sensors..."));
+        varArray.setupSensors();
+    }
 
     // Create the log file, adding the default header to it
     // Do this last so we have the best chance of getting the time correct and
     // all sensor names correct
-    dataLogger.createLogFile(true);  // true = write a new header
-
+    // Writing to the SD card can be power intensive, so if we're skipping
+    // the sensor setup we'll skip this too.
+    if (getBatteryVoltage() > 3.4) {
+        Serial.println(F("Setting up file on SD card"));
+        dataLogger.turnOnSDcard(true);
+        // true = wait for card to settle after power up
+        dataLogger.createLogFile(true);  // true = write a new header
+        dataLogger.turnOffSDcard(true);
+        // true = wait for internal housekeeping after write
+    }
     // Call the processor sleep
+    Serial.println(F("Putting processor to sleep\n"));
     dataLogger.systemSleep();
 }
 /** End [setup] */

@@ -20,11 +20,15 @@ CS500tempRH::CS500tempRH(int8_t powerPin,
                          uint8_t adsChannelRH, 
                          uint8_t i2cAddress, 
                          uint8_t measurementsToAverage)
-    : Sensor("CS500tempRH", CS500_NUM_VARIABLES,
-             CS500_WARM_UP_TIME_MS,
-             CS500_STABILIZATION_TIME_MS,
-             CS500_MEASUREMENT_TIME_MS, powerPin, -1, -1,
-             measurementsToAverage, CS500_INC_CALC_VARIABLES),
+    : Sensor("CS500tempRH", 
+             CS500_NUM_VARIABLES,         // total returned values
+             CS500_WARM_UP_TIME_MS,       // warm up time
+             CS500_STABILIZATION_TIME_MS, // stabilization time
+             CS500_MEASUREMENT_TIME_MS,   // measurement time
+             powerPin,                    // power pin
+             -1,                          // data pin (-1 for there isn' one)
+             measurementsToAverage,       // measurements to average
+             CS500_INC_CALC_VARIABLES),   // number of included calculated variables
       _adsChannelTemp(adsChannelTemp),
       _adsChannelRH(adsChannelRH),
       _i2cAddress(i2cAddress) {}
