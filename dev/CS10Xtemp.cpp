@@ -54,9 +54,9 @@ bool CS10Xtemp::addSingleMeasurementResult(void) {
     float temp_V  = -9999;
     float Temp_degC = -9999;
     float Rs = -9999;
-    int8_t bridge_res = 1000; // bridge resistance in ohms
-    int8_t internal_res = 40000; // internal resistance in ohms
-    float Vexcite = -9999;
+    float bridge_res = 1000; // bridge resistance in ohms
+    float internal_res = 40000; // internal resistance in ohms
+    float Vexcite = 3.3;
     
 
     // Check a measurement was *successfully* started (status bit 6 set)
@@ -102,18 +102,17 @@ bool CS10Xtemp::addSingleMeasurementResult(void) {
         MS_DBG(F("  ads.readADC_SingleEnded_V("), _adsChannelTemp, F("):"),
                temp_V);
         // Read the power pin voltage (Vexcite)
-        Vexcite = ads.readADC_SingleEnded_V(_adsChannelTemp);
+        // Vexcite = ads.readADC_SingleEnded_V(_adsChannelTemp);
         if (temp_V < 3.6 && temp_V > -0.3) {
             // Skip results out of range
             // Apply the unique calibration curve for the given sensor
             // TODO: Where else do i need to define these variables
             Rs = bridge_res * (Vexcite / temp_V) - internal_res;
-            Temp_degC = 1 / ( _coeff_A + _coeff_B * log(Rs) + _coeff_C * (log(Rs))^3 )  - 273.15;
+            Temp_degC = 1 /  (_coeff_A + _coeff_B * log(Rs) + _coeff_C * pow(log(Rs), 3) )  - 273.15;
             MS_DBG(F("  Temp degC:"), Temp_degC);
         } else {  // set invalid voltages back to -9999
             temp_V = -9999;
         }
-        ads.readAD
 
     } else {
         MS_DBG(getSensorNameAndLocation(), F("is not currently measuring!"));

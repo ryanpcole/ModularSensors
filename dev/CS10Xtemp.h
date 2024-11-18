@@ -207,7 +207,7 @@ class CS10Xtemp : public Sensor {
      * 
      * @param adsChannelTemp The analog data channel _on the TI ADS1115_ that the
      * temp sensor is connected to (0-3).
-     * @param coeff_A The (A) coefficient for the calibration _in volts_
+     * @param coeff_A The (A) coefficient for the calibration _in volts_ ()
      * @param coeff_B The (B) coefficient for the calibration _in volts_
      * @param coeff_C The (C) coefficient for the calibration _in volts_
      * @param i2cAddress The I2C address of the ADS 1x15, default is 0x48 (ADDR

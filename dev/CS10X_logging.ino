@@ -1,6 +1,6 @@
 /** =========================================================================
- * @file CS500_logging.ino
- * @brief A simple data logging example for connecting the CS500 temp/rH sensor
+ * @file CS10X_logging.ino
+ * @brief A simple data logging example for connecting the CS10X temp/rH sensor
  *
  * @author Ryan Cole
  * @copyright Stroud Water Research Center
@@ -34,7 +34,7 @@
 // ==========================================================================
 /** Start [logging_options] */
 // The name of this program file
-const char* sketchName = "CS500_logging.ino";
+const char* sketchName = "CS10X_logging.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
 const char* LoggerID = "testlogger";
 // How frequently (in minutes) to log data
@@ -108,29 +108,35 @@ Variable* ds3231Temp =
 //   or can be copied from the `menu_a_la_carte.ino` example
 
 // ==========================================================================
-//  Campbell OBS 3 / OBS 3+ Analog Turbidity Sensor
+//  Campbell 10X Analog Temperature Sensor
 // ==========================================================================
 /** Start [campbell_obs3] */
-#include <CS500tempRH.h>
+#include <CS10Xtemp.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
-const int8_t  CS500Power          = sensorPowerPin;  // Power pin
-const uint8_t CS500NumberReadings = 10;
-const uint8_t CS500ADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
+const int8_t  CS10XPower          = sensorPowerPin;  // Power pin
+const uint8_t CS10XNumberReadings = 10;
+const uint8_t CS10XADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
 
-const int8_t CS500TempADSChannel = 0;  // ADS channel for temperature sensor
-const int8_t CS500RHADSChannel = 1;  // ADS channel for humidity sensor
+const int8_t CS10XTempADSChannel = 0;  // ADS channel for temperature sensor
 
-// Create a CS500 Sensor object
-CS500tempRH cs500(CS500Power, 
-                    CS500TempADSChannel, CS500RHADSChannel, 
-                        CS500ADSi2c_addr, CS500NumberReadings);
+// CS10X Calibration in Volts
+const float coeff_A = 8.271111E-04;  // "A" value 
+const float coeff_B = 2.088020E-04;  // "B" value 
+const float coeff_C = 8.059200E-08;  // "C" value 
+
+
+// Create a CS10X Sensor object
+CS10Xtemp cs10X(CS10XPower, 
+                CS10XTempADSChannel,
+                coeff_A,
+                coeff_B,
+                coeff_C,
+                CS10XADSi2c_addr, CS10XNumberReadings);
 
 // Create turbidity and voltage variable pointers for the low range  of the OBS3
-Variable* cs500tempdegC = new CS500tempRH_Temp(
-    &cs500, "12345678-abcd-1234-ef00-1234567890ab", "TempdegC");
-Variable* cs500RHpct = new CS500tempRH_rH(
-    &cs500, "12345678-abcd-1234-ef00-1234567890ab", "rHpct");
+Variable* cs10XtempdegC = new CS10Xtemp_Temp(
+    &cs10X, "12345678-abcd-1234-ef00-1234567890ab", "TempdegC");
 /** End [campbell_obs3] */
 
 
@@ -145,8 +151,7 @@ Variable* variableList[] = {
     mcuBoardSampNo,
     mcuBoardBatt,
     ds3231Temp,
-    cs500tempdegC,
-    cs500RHpct
+    cs10XtempdegC
 };
 // Count up the number of pointers in the array
 int variableCount = sizeof(variableList) / sizeof(variableList[0]);
