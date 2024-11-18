@@ -17,6 +17,9 @@
 // For Mayfly version; the battery resistor depends on it
 CS10Xtemp::CS10Xtemp(int8_t powerPin, 
                          uint8_t adsChannelTemp, 
+                         float coeff_A,
+                         float coeff_B,
+                         float coeff_C,
                          uint8_t i2cAddress, 
                          uint8_t measurementsToAverage)
     : Sensor("CS10Xtemp", 
@@ -25,10 +28,13 @@ CS10Xtemp::CS10Xtemp(int8_t powerPin,
              CS10X_STABILIZATION_TIME_MS, // stabilization time
              CS10X_MEASUREMENT_TIME_MS,   // measurement time
              powerPin,                    // power pin
-             -1,                          // data pin (-1 for there isn' one)
+             -1,                          // data pin (-1 cuz there isn't one)
              measurementsToAverage,       // measurements to average
              CS10X_INC_CALC_VARIABLES),   // number of included calculated variables
       _adsChannelTemp(adsChannelTemp),
+      _coeff_A(coeff_A),
+      _coeff_B(coeff_B),
+      _coeff_C(coeff_C),
       _i2cAddress(i2cAddress) {}
 
 // Destructor
@@ -45,8 +51,13 @@ String CS10Xtemp::getSensorLocation(void) {
 
 bool CS10Xtemp::addSingleMeasurementResult(void) {
     // Variables to store the results in
-    float temp_mV  = -9999;
+    float temp_V  = -9999;
     float Temp_degC = -9999;
+    float Rs = -9999;
+    int8_t bridge_res = 1000; // bridge resistance in ohms
+    int8_t internal_res = 40000; // internal resistance in ohms
+    float Vexcite = -9999;
+    
 
     // Check a measurement was *successfully* started (status bit 6 set)
     // Only go on to get a result if it was
@@ -77,25 +88,32 @@ bool CS10Xtemp::addSingleMeasurementResult(void) {
         ads.setGain(GAIN_ONE);
         // Begin ADC
         ads.begin();
+        // Print out the calibration curve
+        MS_DBG(F("  Input calibration Curve:"), _coeff_A, F("A"),
+               _coeff_B, F("B"), _coeff_C, F("C"));
 
         // TEMP SENSOR
         // Read Analog to Digital Converter (ADC)
         // Taking this reading includes the 8ms conversion delay.
         // We're allowing the ADS1115 library to do the bit-to-volts conversion
         // for us
-        temp_mV =
-            ads.readADC_SingleEnded_V(_adsChannelTemp) * 1000;  // Getting the reading (in mV)
+        temp_V =
+            ads.readADC_SingleEnded_V(_adsChannelTemp);  // Getting the reading (in V)
         MS_DBG(F("  ads.readADC_SingleEnded_V("), _adsChannelTemp, F("):"),
-               temp_mV);
-        if (temp_mV < 1000 && temp_mV > -1) {
+               temp_V);
+        // Read the power pin voltage (Vexcite)
+        Vexcite = ads.readADC_SingleEnded_V(_adsChannelTemp);
+        if (temp_V < 3.6 && temp_V > -0.3) {
             // Skip results out of range
             // Apply the unique calibration curve for the given sensor
-            // TODO: APPLY THE FORUMULA TO CALC TEMPERATURE
-            Temp_degC = (0.1 * temp_mV) - 40 ;
+            // TODO: Where else do i need to define these variables
+            Rs = bridge_res * (Vexcite / temp_V) - internal_res;
+            Temp_degC = 1 / ( _coeff_A + _coeff_B * log(Rs) + _coeff_C * (log(Rs))^3 )  - 273.15;
             MS_DBG(F("  Temp degC:"), Temp_degC);
         } else {  // set invalid voltages back to -9999
-            temp_mV = -9999;
+            temp_V = -9999;
         }
+        ads.readAD
 
     } else {
         MS_DBG(getSensorNameAndLocation(), F("is not currently measuring!"));
@@ -103,7 +121,7 @@ bool CS10Xtemp::addSingleMeasurementResult(void) {
 
     // Add Temperature measurement and voltage
     verifyAndAddMeasurementResult(TEMP_DEGC_VAR_NUM, Temp_degC);
-    verifyAndAddMeasurementResult(TEMP_VOLTAGE_VAR_NUM, temp_mV);
+    verifyAndAddMeasurementResult(TEMP_VOLTAGE_VAR_NUM, temp_V);
 
 
     // Unset the time stamp for the beginning of this measurement
@@ -111,7 +129,7 @@ bool CS10Xtemp::addSingleMeasurementResult(void) {
     // Unset the status bits for a measurement request (bits 5 & 6)
     _sensorStatus &= 0b10011111;
 
-    if (temp_mV < 1000 && temp_mV > -1) {
+    if (temp_V < 3.6 && temp_V > -0.3) {
         return true;
     } else {
         return false;

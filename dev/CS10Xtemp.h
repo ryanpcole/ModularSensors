@@ -118,7 +118,7 @@
 /**
  * @anchor sensor_cs10X_tempV
  * @name Raw voltage from air temperature sensor
- * - Range: 0-1.0 V
+ * - Range: 0-3.3 V
  *
  * {{ @ref CS10X_tempV::CS10X_tempV }}
  * 
@@ -138,10 +138,10 @@
 #define TEMP_VOLTAGE_VAR_NAME "Voltage"
 /// @brief Variable unit name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/units/);
-/// "millivolts"
-#define TEMP_VOLTAGE_UNIT_NAME "millivolts"
-/// @brief Default variable short code; "mV"
-#define TEMP_VOLTAGE_DEFAULT_CODE "mV"
+/// "Volts"
+#define TEMP_VOLTAGE_UNIT_NAME "Volts"
+/// @brief Default variable short code; "V"
+#define TEMP_VOLTAGE_DEFAULT_CODE "V"
 /**@}*/
 
 
@@ -158,13 +158,18 @@
  * @brief Using equation from manual to calculate temperature in degrees Celsius 
  * from the supplied voltage. 
  * 
- * Equation is:
- * degC = mV * 0.1 - 40
+ * Relevant equations:
+ * Vmeasure / Vexcited = (1k Ohms) / (Rs + 40 kOhms + 1k Ohms) 
+ * 
+ * RS = 1 kOhm * (Vexcited / Vmeasure) - 41k Ohms
+ * 
+ * Tc = 1 / (A + B * ln(Rs) + C * (ln(Rs))^3 )  - 273.15 
+ * 
  * 
  */
 #define TEMP_DEGC_RESOLUTION 1
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
-#define TEMP_DEGC_VAR_NUM 2
+#define TEMP_DEGC_VAR_NUM 1
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "Temperature"
@@ -197,12 +202,14 @@ class CS10Xtemp : public Sensor {
 
      * @param powerPin The port pin providing power to the temp probe.
      * We use 3v3 voltage for this sensor's calibration
-     * 
      * - The ADS1x15 requires an input voltage of 2.0-5.5V, but this library
      * assumes the ADS is powered with 3.3V.
-
+     * 
      * @param adsChannelTemp The analog data channel _on the TI ADS1115_ that the
      * temp sensor is connected to (0-3).
+     * @param coeff_A The (A) coefficient for the calibration _in volts_
+     * @param coeff_B The (B) coefficient for the calibration _in volts_
+     * @param coeff_C The (C) coefficient for the calibration _in volts_
      * @param i2cAddress The I2C address of the ADS 1x15, default is 0x48 (ADDR
      * = GND)
      * @param measurementsToAverage The number of measurements to average;
@@ -210,6 +217,9 @@ class CS10Xtemp : public Sensor {
      */
     CS10Xtemp(int8_t powerPin,
                         uint8_t adsChannelTemp,
+                        float coeff_A,
+                        float coeff_B,
+                        float coeff_C,
                         uint8_t i2cAddress            = ADS1115_ADDRESS,  
                         uint8_t measurementsToAverage = 1);
 
@@ -232,6 +242,9 @@ class CS10Xtemp : public Sensor {
 
  private:
     uint8_t _adsChannelTemp;
+    float _coeff_A;
+    float _coeff_B;
+    float _coeff_C;
     uint8_t _i2cAddress;
 
 };
