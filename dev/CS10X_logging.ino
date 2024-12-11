@@ -134,7 +134,9 @@ CS10Xtemp cs10X(CS10XPower,
                 coeff_C,
                 CS10XADSi2c_addr, CS10XNumberReadings);
 
-// Create turbidity and voltage variable pointers for the low range  of the OBS3
+// Create voltage and temperature variable pointers
+Variable* cs10XtempV = new CS10Xtemp_Volt(
+    &cs10X, "12345678-abcd-1234-ef00-1234567890ab", "V");
 Variable* cs10XtempdegC = new CS10Xtemp_Temp(
     &cs10X, "12345678-abcd-1234-ef00-1234567890ab", "TempdegC");
 /** End [campbell_obs3] */
@@ -151,7 +153,8 @@ Variable* variableList[] = {
     mcuBoardSampNo,
     mcuBoardBatt,
     ds3231Temp,
-    cs10XtempdegC
+    cs10XtempdegC,
+    cs10XtempV
 };
 // Count up the number of pointers in the array
 int variableCount = sizeof(variableList) / sizeof(variableList[0]);

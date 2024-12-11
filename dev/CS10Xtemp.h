@@ -250,7 +250,54 @@ class CS10Xtemp : public Sensor {
 };
 
 /**
- * @brief The variable class used for Temperature and Relative Humidity measured 
+ * @brief The variable class used for Voltage measured 
+ * using analog pins connected to CS10X sensor
+ *
+ * @ingroup sensor_cs10X_temp
+ *
+ */
+class CS10Xtemp_Volt : public Variable {
+ public:
+    /**
+     * @brief Construct a new  CS10Xtemp_Volt object.
+     *
+     * @param parentSense The parent CS10Xtemp providing the result
+     * values.
+     * @param uuid A universally unique identifier (UUID or GUID) for the
+     * variable; optional with the default value of an empty string.
+     * @param varCode A short code to help identify the variable in files;
+     * optional with a default value of "Volts".
+     */
+    CS10Xtemp_Volt(
+        CS10Xtemp* parentSense, const char* uuid = "",
+        const char* varCode = TEMP_VOLTAGE_DEFAULT_CODE)
+        : Variable(parentSense,
+                   (const uint8_t)TEMP_VOLTAGE_VAR_NUM,
+                   (uint8_t)TEMP_VOLTAGE_RESOLUTION,
+                   TEMP_VOLTAGE_VAR_NAME,
+                   TEMP_VOLTAGE_UNIT_NAME, varCode, uuid) {}
+
+    /**
+     * @brief Construct a new CS10Xtemp_Temp object.
+     *
+     * @note This must be tied with a parent CS10Xtemp before it
+     * can be used.
+     */
+    CS10Xtemp_Volt()
+        : Variable((const uint8_t)TEMP_VOLTAGE_VAR_NUM,
+                   (uint8_t)TEMP_VOLTAGE_RESOLUTION,
+                   TEMP_VOLTAGE_VAR_NAME,
+                   TEMP_VOLTAGE_UNIT_NAME,
+                   TEMP_VOLTAGE_DEFAULT_CODE) {}
+    /**
+     * @brief Destroy the CS10Xtemp_Temp object - no action needed.
+     */
+    ~CS10Xtemp_Volt() {}
+};
+
+
+/**
+ * @brief The variable class used for Temperature measured 
  * using analog pins connected to CS10X sensor
  *
  * @ingroup sensor_cs10X_temp
