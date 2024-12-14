@@ -14,6 +14,22 @@
  * ======================================================================= */
 
 // ==========================================================================
+//  Defines for TinyGSM
+// ==========================================================================
+/** Start [defines] */
+#ifndef TINY_GSM_RX_BUFFER
+#define TINY_GSM_RX_BUFFER 64
+#endif
+#ifndef TINY_GSM_YIELD_MS
+#define TINY_GSM_YIELD_MS 2
+#endif
+#ifndef MQTT_MAX_PACKET_SIZE
+#define MQTT_MAX_PACKET_SIZE 240
+#endif
+/** End [defines] */
+
+
+// ==========================================================================
 //  Include the libraries required for any data logger
 // ==========================================================================
 /** Start [includes] */
@@ -58,6 +74,48 @@ const int8_t sdCardSSPin    = 12;  // SD card chip select/slave select pin
 const int8_t sensorPowerPin = 22;  // MCU pin controlling main sensor power
 /** End [logging_options] */
 
+// ==========================================================================
+//  Wifi/Cellular Modem Options
+//    NOTE:  DON'T USE MORE THAN ONE MODEM OBJECT!
+//           Delete the sections you are not using!
+// ==========================================================================
+
+#if defined BUILD_MODEM_ESPRESSIF_ESP32
+/** Start [espressif_esp32] */
+// For almost anything based on the Espressif ESP8266 using the
+// AT command firmware
+#include <modems/EspressifESP32.h>
+
+// NOTE: Extra hardware and software serial ports are created in the "Settings
+// for Additional Serial Ports" section
+// Create a reference to the serial port for the modem
+HardwareSerial& modemSerial = Serial1;  // Use hardware serial if possible
+const int32_t modemBaud = 57600;  // Communication speed of the modem
+// NOTE:  This baud rate too fast for an 8MHz board, like the Mayfly!  The
+// module should be programmed to a slower baud rate or set to auto-baud using
+// the AT+UART_CUR or AT+UART_DEF command.
+
+// Modem Pins - Describe the physical pin connection of your modem to your board
+// NOTE:  Use -1 for pins that do not apply
+// Example pins here are for a EnviroDIY ESP32 Bluetooth/Wifi Bee with
+// Mayfly 1.1
+const int8_t modemVccPin   = 18;      // MCU pin controlling modem power
+const int8_t modemResetPin = -1;      // MCU pin connected to modem reset pin
+const int8_t modemLEDPin   = redLED;  // MCU pin connected an LED to show modem
+                                      // status
+
+// Network connection information
+const char* wifiId  = "XXXX";  // WiFi access point name
+const char* wifiPwd = "XXXX";  // WiFi password (WPA2)
+
+// Create the modem object
+EspressifESP32 modemESP(&modemSerial, modemVccPin, modemResetPin, wifiId,
+                        wifiPwd);
+// Create an extra reference to the modem by a generic name
+EspressifESP32 modem = modemESP;
+/** End [espressif_esp32] */
+// ==========================================================================
+#endif
 
 // ==========================================================================
 //  Using the Processor as a Sensor
@@ -220,6 +278,21 @@ void setup() {
 
     Serial.print(F("Using ModularSensors Library version "));
     Serial.println(MODULAR_SENSORS_VERSION);
+
+    #if (defined BUILD_MODEM_ESPRESSIF_ESP8266 || \
+     defined BUILD_MODEM_ESPRESSIF_ESP32) &&  \
+    F_CPU == 8000000L
+    /** Start [setup_esp] */
+    if (modemBaud > 57600) {
+        modem.modemWake();  // NOTE:  This will also set up the modem
+        modemSerial.begin(modemBaud);
+        modem.gsmModem.sendAT(GF("+UART_DEF=9600,8,1,0,0"));
+        modem.gsmModem.waitResponse();
+        modemSerial.end();
+        modemSerial.begin(9600);
+    }
+    /** End [setup_esp] */
+    #endif
 
     // Set up pins for the LED's
     pinMode(greenLED, OUTPUT);
