@@ -38,11 +38,18 @@
 
 // EnableInterrupt is used by ModularSensors for external and pin change
 // interrupts and must be explicitly included in the main program.
-#include <EnableInterrupt.h>
+// #include <EnableInterrupt.h>
 
 // Include the main header for ModularSensors
 #include <ModularSensors.h>
 /** End [includes] */
+
+// ==========================================================================
+//  Assigning Serial Port Functionality
+// ==========================================================================
+// We give the modem first priority and assign it to hardware serial
+// All of the supported processors have a hardware port available named Serial1
+#define modemSerial Serial1
 
 
 // ==========================================================================
@@ -88,8 +95,6 @@ const int8_t sensorPowerPin = 22;  // MCU pin controlling main sensor power
 
 // NOTE: Extra hardware and software serial ports are created in the "Settings
 // for Additional Serial Ports" section
-// Create a reference to the serial port for the modem
-HardwareSerial& modemSerial = Serial1;  // Use hardware serial if possible
 const int32_t modemBaud = 57600;  // Communication speed of the modem
 // NOTE:  This baud rate too fast for an 8MHz board, like the Mayfly!  The
 // module should be programmed to a slower baud rate or set to auto-baud using
@@ -105,8 +110,12 @@ const int8_t modemLEDPin   = redLED;  // MCU pin connected an LED to show modem
                                       // status
 
 // Network connection information
-const char* wifiId  = "XXXX";  // WiFi access point name
-const char* wifiPwd = "XXXX";  // WiFi password (WPA2)
+#ifndef wifiId
+const char* wifiId  = "xxxxx";  // WiFi access point name
+#endif
+#ifndef wifiPwd
+const char* wifiPwd = "xxxxx";  // WiFi password (WPA2)
+#endif
 
 // Create the modem object
 EspressifESP32 modemESP(&modemSerial, modemVccPin, modemResetPin, wifiId,
@@ -116,6 +125,24 @@ EspressifESP32 modem = modemESP;
 /** End [espressif_esp32] */
 // ==========================================================================
 #endif
+
+/** Start [modem_variables] */
+// Create RSSI and signal strength variable pointers for the modem
+Variable* modemRSSI =
+    new Modem_RSSI(&modem, "12345678-abcd-1234-ef00-1234567890ab", "RSSI");
+Variable* modemSignalPct = new Modem_SignalPercent(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "signalPercent");
+Variable* modemBatteryState = new Modem_BatteryState(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "modemBatteryCS");
+Variable* modemBatteryPct = new Modem_BatteryPercent(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "modemBatteryPct");
+Variable* modemBatteryVoltage = new Modem_BatteryVoltage(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "modemBatterymV");
+Variable* modemTemperature =
+    new Modem_Temp(&modem, "12345678-abcd-1234-ef00-1234567890ab", "modemTemp");
+/** End [modem_variables] */
+
+
 
 // ==========================================================================
 //  Using the Processor as a Sensor
@@ -166,9 +193,9 @@ Variable* ds3231Temp =
 //   or can be copied from the `menu_a_la_carte.ino` example
 
 // ==========================================================================
-//  Campbell OBS 3 / OBS 3+ Analog Turbidity Sensor
+//  Campbell CS500 Temp and RH sensor
 // ==========================================================================
-/** Start [campbell_obs3] */
+/** Start [campbell_cs500] */
 #include <CS500tempRH.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
@@ -189,7 +216,7 @@ Variable* cs500tempdegC = new CS500tempRH_Temp(
     &cs500, "12345678-abcd-1234-ef00-1234567890ab", "TempdegC");
 Variable* cs500RHpct = new CS500tempRH_rH(
     &cs500, "12345678-abcd-1234-ef00-1234567890ab", "rHpct");
-/** End [campbell_obs3] */
+/** End [campbell_cs500] */
 
 
 
@@ -204,7 +231,9 @@ Variable* variableList[] = {
     mcuBoardBatt,
     ds3231Temp,
     cs500tempdegC,
-    cs500RHpct
+    cs500RHpct,
+    modemRSSI,
+    modemSignalPct
 };
 // Count up the number of pointers in the array
 int variableCount = sizeof(variableList) / sizeof(variableList[0]);
@@ -247,9 +276,9 @@ float getBatteryVoltage() {
     return mcuBoard.sensorValues[PROCESSOR_BATTERY_VAR_NUM];
 }
 
-// Set the SW12v power pin high so it is constantly on for testing on a breadboard
+// Set the switched power pin high so it is constantly on for testing on a breadboard
 // Power the sensors;
-void power12v(int8_t sensorPowerPin) {
+void switch_poweron(int8_t sensorPowerPin) {
     if (sensorPowerPin > 0) {
     //Serial.println("Powering up sensors...");
     // pinMode(sensorPowerPin, OUTPUT);
@@ -279,20 +308,20 @@ void setup() {
     Serial.print(F("Using ModularSensors Library version "));
     Serial.println(MODULAR_SENSORS_VERSION);
 
-    #if (defined BUILD_MODEM_ESPRESSIF_ESP8266 || \
-     defined BUILD_MODEM_ESPRESSIF_ESP32) &&  \
-    F_CPU == 8000000L
-    /** Start [setup_esp] */
-    if (modemBaud > 57600) {
-        modem.modemWake();  // NOTE:  This will also set up the modem
-        modemSerial.begin(modemBaud);
-        modem.gsmModem.sendAT(GF("+UART_DEF=9600,8,1,0,0"));
-        modem.gsmModem.waitResponse();
-        modemSerial.end();
-        modemSerial.begin(9600);
-    }
-    /** End [setup_esp] */
-    #endif
+    Serial.print(F("TinyGSM Library version "));
+    Serial.println(TINYGSM_VERSION);
+    Serial.println();
+
+    Serial.print(F("SSID "));
+    Serial.println(wifiId);
+    Serial.print(F("Password "));
+    Serial.println(wifiPwd);
+    Serial.println();
+
+
+    /** Start [setup_serial_begins] */
+    // Start the serial connection with the modem
+    modemSerial.begin(modemBaud);
 
     // Set up pins for the LED's
     pinMode(greenLED, OUTPUT);
@@ -321,7 +350,9 @@ void setup() {
     // It is STRONGLY RECOMMENDED that you set the RTC to be in UTC (UTC+0)
     Logger::setRTCTimeZone(0);
 
-    // Set information pins
+    // Attach the modem and information pins to the logger
+    dataLogger.attachModem(modem);
+    modem.setModemLED(modemLEDPin);
     dataLogger.setLoggerPins(wakePin, sdCardSSPin, sdCardPwrPin, buttonPin,
                              greenLED);
 
@@ -335,6 +366,23 @@ void setup() {
         varArray.setupSensors();
     }
 
+#if (defined BUILD_MODEM_ESPRESSIF_ESP8266 || \
+     defined BUILD_MODEM_ESPRESSIF_ESP32) &&  \
+    F_CPU == 8000000L
+    /** Start [setup_esp] */
+    if (modemBaud > 57600) {
+        modem.modemWake();  // NOTE:  This will also set up the modem
+        modemSerial.begin(modemBaud);
+        modem.gsmModem.sendAT(GF("+UART_DEF=9600,8,1,0,0"));
+        modem.gsmModem.waitResponse();
+        modemSerial.end();
+        modemSerial.begin(9600);
+    }
+    /** End [setup_esp] */
+#endif
+
+
+    /** Start [setup_file] */
     // Create the log file, adding the default header to it
     // Do this last so we have the best chance of getting the time correct and
     // all sensor names correct
@@ -348,9 +396,13 @@ void setup() {
         dataLogger.turnOffSDcard(true);
         // true = wait for internal housekeeping after write
     }
+    /** End [setup_file] */
+
+    /** Start [setup_sleep] */
     // Call the processor sleep
     Serial.println(F("Putting processor to sleep\n"));
-    // dataLogger.systemSleep();
+    dataLogger.systemSleep();
+    /** End [setup_sleep] */
 }
 /** End [setup] */
 
@@ -360,8 +412,16 @@ void setup() {
 // ==========================================================================
 /** Start [loop] */
 void loop() {
-
-    dataLogger.logData();
-
+    // Note:  Please change these battery voltages to match your battery
+    // At very low battery, just go back to sleep
+    if (getBatteryVoltage() < 3.4) {
+        dataLogger.systemSleep();
+    } else if (getBatteryVoltage() < 3.55) {
+        // At moderate voltage, log data but don't send it over the modem
+        dataLogger.logData();
+    } else {
+        // If the battery is good, send the data to the world
+        dataLogger.logDataAndPublish();
+    }
 }
 /** End [loop] */

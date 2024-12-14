@@ -4,7 +4,10 @@ ehthumbs.db
 ~*
 
 # Dev folder
-dev
+# dev
+
+# Secrets file
+arduino_secrets.h
 
 # Folder config file
 Desktop.ini
