@@ -95,7 +95,7 @@ const int8_t sensorPowerPin = 22;  // MCU pin controlling main sensor power
 
 // NOTE: Extra hardware and software serial ports are created in the "Settings
 // for Additional Serial Ports" section
-const int32_t modemBaud = 57600;  // Communication speed of the modem
+const int32_t modemBaud = 115200;  // Communication speed of the modem
 // NOTE:  This baud rate too fast for an 8MHz board, like the Mayfly!  The
 // module should be programmed to a slower baud rate or set to auto-baud using
 // the AT+UART_CUR or AT+UART_DEF command.
@@ -373,6 +373,7 @@ void setup() {
     if (modemBaud > 57600) {
         modem.modemWake();  // NOTE:  This will also set up the modem
         modemSerial.begin(modemBaud);
+        //modem.gsmModem.sendAT(GF(""));
         modem.gsmModem.sendAT(GF("+UART_DEF=9600,8,1,0,0"));
         modem.gsmModem.waitResponse();
         modemSerial.end();
@@ -410,18 +411,137 @@ void setup() {
 // ==========================================================================
 //  Arduino Loop Function
 // ==========================================================================
-/** Start [loop] */
+/** Start [complex_loop] */
+// Use this long loop when you want to do something special
+// Because of the way alarms work on the RTC, it will wake the processor and
+// start the loop every minute exactly on the minute.
+// The processor may also be woken up by another interrupt or level change on a
+// pin - from a button or some other input.
+// The "if" statements in the loop determine what will happen - whether the
+// sensors update, testing mode starts, or it goes back to sleep.
 void loop() {
-    // Note:  Please change these battery voltages to match your battery
-    // At very low battery, just go back to sleep
-    if (getBatteryVoltage() < 3.4) {
-        dataLogger.systemSleep();
-    } else if (getBatteryVoltage() < 3.55) {
-        // At moderate voltage, log data but don't send it over the modem
-        dataLogger.logData();
-    } else {
-        // If the battery is good, send the data to the world
-        dataLogger.logDataAndPublish();
+    // Reset the watchdog
+    dataLogger.watchDogTimer.resetWatchDog();
+
+    // Assuming we were woken up by the clock, check if the current time is an
+    // even interval of the logging interval
+    // We're only doing anything at all if the battery is above 3.4V
+    if (dataLogger.checkInterval() && getBatteryVoltage() > 3.4) {
+        // Flag to notify that we're in already awake and logging a point
+        Logger::isLoggingNow = true;
+        dataLogger.watchDogTimer.resetWatchDog();
+
+        // Print a line to show new reading
+        Serial.println(F("------------------------------------------"));
+        // Turn on the LED to show we're taking a reading
+        dataLogger.alertOn();
+        // Power up the SD Card, but skip any waits after power up
+        dataLogger.turnOnSDcard(false);
+        dataLogger.watchDogTimer.resetWatchDog();
+
+        // Turn on the modem to let it start searching for the network
+        // Only turn the modem on if the battery at the last interval was high
+        // enough
+        // NOTE:  if the modemPowerUp function is not run before the
+        // completeUpdate
+        // function is run, the modem will not be powered and will not
+        // return a signal strength reading.
+        if (getBatteryVoltage() > 3.6) modem.modemPowerUp();
+
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+        // Start the stream for the modbus sensors, if your RS485 adapter bleeds
+        // current from data pins when powered off & you stop modbus serial
+        // connection with digitalWrite(5, LOW), below.
+        // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+        altSoftSerial.begin(9600);
+#endif
+
+        // Do a complete update on the variable array.
+        // This this includes powering all of the sensors, getting updated
+        // values, and turing them back off.
+        // NOTE:  The wake function for each sensor should force sensor setup
+        // to run if the sensor was not previously set up.
+        varArray.completeUpdate();
+
+        dataLogger.watchDogTimer.resetWatchDog();
+
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+        // Reset modbus serial pins to LOW, if your RS485 adapter bleeds power
+        // on sleep, because Modbus Stop bit leaves these pins HIGH.
+        // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+        digitalWrite(5, LOW);  // Reset AltSoftSerial Tx pin to LOW
+        digitalWrite(6, LOW);  // Reset AltSoftSerial Rx pin to LOW
+#endif
+
+        // Create a csv data record and save it to the log file
+        dataLogger.logToSD();
+        dataLogger.watchDogTimer.resetWatchDog();
+
+        // Connect to the network
+        // Again, we're only doing this if the battery is doing well
+        if (getBatteryVoltage() > 3.55) {
+            dataLogger.watchDogTimer.resetWatchDog();
+            if (modem.connectInternet()) {
+                dataLogger.watchDogTimer.resetWatchDog();
+                // Publish data to remotes
+                Serial.println(F("Modem connected to internet."));
+                dataLogger.publishDataToRemotes();
+
+                // Sync the clock at noon
+                dataLogger.watchDogTimer.resetWatchDog();
+                if (Logger::markedLocalEpochTime != 0 &&
+                    Logger::markedLocalEpochTime % 86400 == 43200) {
+                    Serial.println(F("Running a daily clock sync..."));
+                    dataLogger.setRTClock(modem.getNISTTime());
+                    dataLogger.watchDogTimer.resetWatchDog();
+                    modem.updateModemMetadata();
+                    dataLogger.watchDogTimer.resetWatchDog();
+                }
+
+                // Disconnect from the network
+                modem.disconnectInternet();
+                dataLogger.watchDogTimer.resetWatchDog();
+            }
+            // Turn the modem off
+            modem.modemSleepPowerDown();
+            dataLogger.watchDogTimer.resetWatchDog();
+        }
+
+        // Cut power from the SD card - without additional housekeeping wait
+        dataLogger.turnOffSDcard(false);
+        dataLogger.watchDogTimer.resetWatchDog();
+        // Turn off the LED
+        dataLogger.alertOff();
+        // Print a line to show reading ended
+        Serial.println(F("------------------------------------------\n"));
+
+        // Unset flag
+        Logger::isLoggingNow = false;
     }
+
+    // Check if it was instead the testing interrupt that woke us up
+    if (Logger::startTesting) {
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+        // Start the stream for the modbus sensors, if your RS485 adapter bleeds
+        // current from data pins when powered off & you stop modbus serial
+        // connection with digitalWrite(5, LOW), below.
+        // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+        altSoftSerial.begin(9600);
+#endif
+
+        dataLogger.testingMode();
+    }
+
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+    // Reset modbus serial pins to LOW, if your RS485 adapter bleeds power
+    // on sleep, because Modbus Stop bit leaves these pins HIGH.
+    // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+    digitalWrite(5, LOW);  // Reset AltSoftSerial Tx pin to LOW
+    digitalWrite(6, LOW);  // Reset AltSoftSerial Rx pin to LOW
+#endif
+
+    // Call the processor sleep
+    dataLogger.systemSleep();
+
 }
 /** End [loop] */
