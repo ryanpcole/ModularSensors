@@ -1,14 +1,15 @@
 /** =========================================================================
- * @file DRWI_Mayfly1_WiFi.ino
- * @brief Example for DRWI CitSci LTE sites.
+ * @file CS500_wifilogger.ino
+ * @brief First attemt at home met station setup
  *
  * This example shows proper settings for the following configuration:
  *
  * Mayfly v1.x board
  * EnviroDIY ESP32 Wifi Bee module
- * Hydros21 CTD sensor
+ * Campbell Sci CS500 temp/rH Sensor
  *
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ * @author Ryan Cole
  * @copyright Stroud Water Research Center
  * This example is published under the BSD-3 license.
  *
@@ -48,13 +49,13 @@
 // ==========================================================================
 /** Start [logging_options] */
 // The name of this program file
-const char* sketchName = "DRWI_Mayfly1_WiFi.ino";
+const char* sketchName = "CS500_wifilogger.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
-const char* LoggerID = "XXXXX";
+const char* LoggerID = "home_met";
 // How frequently (in minutes) to log data
-const uint8_t loggingInterval = 15;
+const uint8_t loggingInterval = 1;
 // Your logger's timezone.
-const int8_t timeZone = -5;  // Eastern Standard Time
+const int8_t timeZone = -8;  // Pacific Standard Time
 // NOTE:  Daylight savings time will not be applied!  Please use standard time!
 
 // Set the input and output pins for the logger
