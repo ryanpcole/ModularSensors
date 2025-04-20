@@ -4,7 +4,7 @@ ehthumbs.db
 ~*
 
 # Dev folder
-#dev
+dev
 
 # Secrets
 arduino_secrets.h
