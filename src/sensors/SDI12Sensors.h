@@ -1,7 +1,8 @@
 /**
  * @file SDI12Sensors.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the SDI12Sensors sensor subclass, itself a parent class for
@@ -210,7 +211,7 @@ class SDI12Sensors : public Sensor {
      * sensor and calls the getSensorInfo() function.  Sensor power **is**
      * required.
      *
-     * @return **bool** True if the setup was successful.
+     * @return True if the setup was successful.
      */
     bool setup(void) override;
 
@@ -225,7 +226,7 @@ class SDI12Sensors : public Sensor {
      * @note This function does NOT include any waiting for the sensor to be
      * warmed up or stable!
      *
-     * @return **bool** True if the start measurement function completed
+     * @return True if the start measurement function completed
      * successfully.
      */
     bool startSingleMeasurement(void) override;
@@ -240,7 +241,7 @@ class SDI12Sensors : public Sensor {
      * @brief Send the SDI-12 'acknowledge active' command [address][!] to a
      * sensor and confirm that the correct sensor responded.
      *
-     * @return **bool** True if the correct SDI-12 sensor replied to the
+     * @return True if the correct SDI-12 sensor replied to the
      * command.
      */
     bool requestSensorAcknowledgement(void);
@@ -248,7 +249,7 @@ class SDI12Sensors : public Sensor {
      * @brief Send the SDI-12 'info' command [address][I][!] to a sensor and
      * parse the result into the vendor, model, version, and serial number.
      *
-     * @return **bool** True if all expected information fields returned by the
+     * @return True if all expected information fields returned by the
      * sensor.
      */
     bool getSensorInfo(void);
@@ -263,14 +264,14 @@ class SDI12Sensors : public Sensor {
      * @param isConcurrent Whether to start a concurrent or standard
      * measurement.  Defaults to 'true' for a concurrent measurement.
      *
-     * @return **int8_t** The length of time the measurement is expected to
+     * @return The length of time the measurement is expected to
      * take.
      */
     int8_t startSDI12Measurement(bool isConcurrent = true);
     /**
      * @brief Gets the results of either a standard or a concurrent measurement
      *
-     * @return **bool** True if the full number of expected results was
+     * @return True if the full number of expected results was
      * returned.
      */
     virtual bool getResults(void);
@@ -289,10 +290,10 @@ class SDI12Sensors : public Sensor {
     int8_t _extraWakeTime;
 
  private:
-    String _sensorVendor;
-    String _sensorModel;
-    String _sensorVersion;
-    String _sensorSerialNumber;
+    String _sensorVendor;   ///< The vendor (manufacturer) of the SDI-12 sensor
+    String _sensorModel;    ///< The model of the SDI-12 sensor
+    String _sensorVersion;  ///< The version of the SDI-12 sensor
+    String _sensorSerialNumber;  ///< The serial number of the SDI-12 sensor
 };
 
 #endif  // SRC_SENSORS_SDI12SENSORS_H_

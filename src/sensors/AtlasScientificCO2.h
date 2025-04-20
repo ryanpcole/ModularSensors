@@ -1,7 +1,8 @@
 /**
  * @file AtlasScientificCO2.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Initial developement for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
@@ -62,17 +63,30 @@
 #include "VariableBase.h"
 #include "sensors/AtlasParent.h"
 
-// Sensor Specific Defines
 /** @ingroup sensor_atlas_co2 */
 /**@{*/
 
-/// Default I2C address is 0x69 (105)
-#define ATLAS_CO2_I2C_ADDR 0x69  // 105
-
+/**
+ * @anchor sensor_atlas_co2_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the Atlas CO2 sensor
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the Atlas CO2 sensor can report 2 values.
 #define ATLAS_CO2_NUM_VARIABLES 2
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define ATLAS_CO2_INC_CALC_VARIABLES 0
+/**@}*/
+
+/**
+ * @anchor sensor_atlas_co2_config
+ * @name Configuration Defines
+ * Defines to configure and set the address of the Atlas CO2 sensor
+ */
+/**@{*/
+/// @brief The default I2C address of the Atlas CO2 sensor is 0x69 (105)
+#define ATLAS_CO2_I2C_ADDR 0x69
+/**@}*/
 
 /**
  * @anchor sensor_atlas_co2_timing
@@ -220,7 +234,7 @@ class AtlasScientificCO2 : public AtlasParent {
      * circuit to report all possible measurement parameters, and sets the
      * status bit if successful.  The circuit must be powered for setup.
      *
-     * @return **bool** True if the setup was successful.
+     * @return True if the setup was successful.
      */
     bool setup(void) override;
 };

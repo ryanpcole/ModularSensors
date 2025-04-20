@@ -1,7 +1,8 @@
 /**
  * @file LoggerModem.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the loggerModem class and the variable subclasses
@@ -43,7 +44,7 @@
  * Variable objects to be tied to a loggerModem.  These are measured by a modem,
  * but are implemented as calculated variables.
  *
- * @note  The modem is NOT set up as a sensor.  ALl of these variables for the
+ * @note  The modem is NOT set up as a sensor.  ALL of these variables for the
  * modem object are actually being called as calculated variables where the
  * calculation function is to ask the modem object for the values from the last
  * time it connected to the internet.
@@ -68,6 +69,9 @@
  * RSSI is a rough calculation, so it has 0 decimal place resolution
  */
 #define MODEM_RSSI_RESOLUTION 0
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable RSSI
+/// polling.
+#define MODEM_RSSI_ENABLE_BITMASK 0b00000001
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "RSSI"
@@ -94,6 +98,9 @@
  * Percent signal is a rough calculation, so it has 0 decimal place resolution
  */
 #define MODEM_PERCENT_SIGNAL_RESOLUTION 0
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable percent
+/// signal polling.
+#define MODEM_PERCENT_SIGNAL_ENABLE_BITMASK 0b00000010
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "signalPercent"
@@ -124,6 +131,9 @@
  * Battery state is a code value; it has 0 decimal place resolution
  */
 #define MODEM_BATTERY_STATE_RESOLUTION 0
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable modem
+/// battery charging state polling.
+#define MODEM_BATTERY_STATE_ENABLE_BITMASK 0b00000100
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "batteryChargeState"
@@ -151,6 +161,9 @@
 /// @brief Decimals places in string representation; battery charge percent
 /// should have 0.
 #define MODEM_BATTERY_PERCENT_RESOLUTION 0
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable modem
+/// battery percent polling.
+#define MODEM_BATTERY_PERCENT_ENABLE_BITMASK 0b00001000
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "batteryVoltage"
@@ -181,6 +194,9 @@
  * No supported module has higher than 1mV resolution in battery reading.
  */
 #define MODEM_BATTERY_VOLTAGE_RESOLUTION 0
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable modem
+/// battery voltage polling.
+#define MODEM_BATTERY_VOLTAGE_ENABLE_BITMASK 0b00010000
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "batteryVoltage"
@@ -210,6 +226,9 @@
  * Most modules that can measure temperature measure to 0.1°C
  */
 #define MODEM_TEMPERATURE_RESOLUTION 1
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable modem
+/// temperature polling.
+#define MODEM_TEMPERATURE_ENABLE_BITMASK 0b00100000
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "temperature"
@@ -236,6 +255,9 @@
 /// @brief Decimals places in string representation; total active time should
 /// have 3.
 #define MODEM_ACTIVATION_RESOLUTION 3
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable modem
+/// activation time polling.
+#define MODEM_ACTIVATION_ENABLE_BITMASK 0b01000000
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "timeElapsed"
@@ -260,6 +282,9 @@
 /// @brief Decimals places in string representation; total powered time should
 /// have 3.
 #define MODEM_POWERED_RESOLUTION 3
+/// @brief The bit mask for loggerModem::_pollModemMetaData to enable modem
+/// power time polling
+#define MODEM_POWERED_ENABLE_BITMASK 0b10000000
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "timeElapsed"
@@ -336,9 +361,21 @@ class loggerModem {
     /**
      * @brief Get the modem name.
      *
-     * @return **String** The modem name
+     * @return The modem name
      */
     String getModemName(void);
+
+    /**
+     * @brief Get a detailed printable description of the modem.
+     *
+     * @note These values are polled for and cached in memory till needed
+     *
+     * @return The concatenated name, hardware version, firmware
+     * version, and serial number of the modem.
+     *
+     * @todo Implement this for modems other than the XBee WiFi
+     */
+    String getModemDevId(void);
 
     /**
      * @brief Set up the modem before first use.
@@ -346,7 +383,7 @@ class loggerModem {
      * This is used for operations that cannot happen in the modem constructor -
      * they must happen at run time, not at compile time.
      *
-     * @return **bool** True if setup was successful
+     * @return True if setup was successful
      */
     virtual bool modemSetup(void);
     /**
@@ -355,7 +392,7 @@ class loggerModem {
      *
      * @m_deprecated_since{0,24,1}
      *
-     * @return **bool** True if setup was successful
+     * @return True if setup was successful
      */
     bool setup(void) {
         return modemSetup();
@@ -378,7 +415,7 @@ class loggerModem {
      *
      * For most modules, this function is created by the #MS_MODEM_WAKE macro.
      *
-     * @return **bool** True if the modem is responsive and ready for action.
+     * @return True if the modem is responsive and ready for action.
      */
     virtual bool modemWake(void) = 0;
     /**
@@ -386,7 +423,7 @@ class loggerModem {
      *
      * @m_deprecated_since{0,24,1}
      *
-     * @return **bool** True if wake was sucessful, modem should be ready to
+     * @return True if wake was sucessful, modem should be ready to
      * communicate
      */
     bool wake(void) {
@@ -408,7 +445,7 @@ class loggerModem {
     /**
      * @brief Request that the modem enter its lowest possible power state.
      *
-     * @return **bool** True if the modem has sucessfully entered low power
+     * @return True if the modem has sucessfully entered low power
      * state
      */
     virtual bool modemSleep(void);
@@ -420,7 +457,7 @@ class loggerModem {
      * This allows the modem to shut down all connections cleanly and do any
      * necessary internal housekeeping before stopping power.
      *
-     * @return **bool** True if the modem has sucessfully entered low power
+     * @return True if the modem has sucessfully entered low power
      * state _and_ then powered off
      */
     virtual bool modemSleepPowerDown(void);
@@ -432,7 +469,7 @@ class loggerModem {
      *
      * This should only be used if the modem is clearly non-responsive.
      *
-     * @return **bool** True if the reset succeeded and the modem should now be
+     * @return True if the reset succeeded and the modem should now be
      * responsive.  False if the modem remains non-responsive either because the
      * reset failed to fix the communication issue or because a reset is not
      * possible with the current pin/modem configuration.
@@ -497,7 +534,7 @@ class loggerModem {
      * @param maxConnectionTime The maximum length of time in milliseconds to
      * wait for network registration and data sconnection.  Defaults to 50,000ms
      * (50s).
-     * @return **bool** True if EPS or GPRS data connection has been
+     * @return True if EPS or GPRS data connection has been
      * established.  False if the modem wasunresponsive, unable to register with
      * the cellular network, or unable to establish a EPS or GPRS connection.
      */
@@ -517,7 +554,7 @@ class loggerModem {
      *
      * @note The return is the number of seconds since Jan 1, 1970 IN UTC
      *
-     * @return **uint32_t** The number of seconds since Jan 1, 1970 IN UTC
+     * @return The number of seconds since Jan 1, 1970 IN UTC
      */
     virtual uint32_t getNISTTime(void) = 0;
     /**@}*/
@@ -535,6 +572,7 @@ class loggerModem {
      * called after the modem is connected to the internet.
      */
     /**@{*/
+
     /**
      * @brief Query the modem for the current signal quality and write the
      * results to the supplied non-constant references.
@@ -543,7 +581,7 @@ class loggerModem {
      * signal strength indicator
      * @param percent A reference to an int16_t which will be set with the
      * "percent" signal strength
-     * @return **bool** True indicates that the communication with the modem was
+     * @return True indicates that the communication with the modem was
      * successful and the values referenced by the pointers should be valid.
      */
     virtual bool getModemSignalQuality(int16_t& rssi, int16_t& percent) = 0;
@@ -560,25 +598,69 @@ class loggerModem {
      * @param milliVolts A reference to an uint16_t which will be set with the
      * current battery voltage in mV - this may or may not be a valid value
      * depending on the module and breakout.
-     * @return **bool** True indicates that the communication with the modem was
+     * @return True indicates that the communication with the modem was
      * successful and the values referenced by the pointers should be valid.
      */
-    virtual bool getModemBatteryStats(uint8_t& chargeState, int8_t& percent,
-                                      uint16_t& milliVolts) = 0;
+    virtual bool getModemBatteryStats(int8_t& chargeState, int8_t& percent,
+                                      int16_t& milliVolts) = 0;
     /**
      * @brief Get the current temperature provided by the modem module.
      *
-     * @return **float** The temperature in degrees Celsius
+     * @return The temperature in degrees Celsius
      */
     virtual float getModemChipTemperature(void) = 0;
+
+
+    /**
+     * @brief Enables metadata polling for one or more modem measured
+     * variables. Setting this to 0b11111111 will enable polling for all modem
+     * measured variables.
+     *
+     * @param pollingBitmask The bitmask indicating which paramters to poll.
+     *
+     * @see loggerModem::_pollModemMetaData
+     *
+     * @note This will **not** disable polling for any unset bits in the
+     * provided bitmask.  It will only enable those bits that are set.
+     */
+    void enableMetadataPolling(uint8_t pollingBitmask);
+
+    /**
+     * @brief Disables metadata polling for one or more modem measured
+     * variables.  Setting this to 0b11111111 will disable polling for all modem
+     * measured variables.
+     *
+     * @param pollingBitmask The bitmask indicating which paramters to poll.
+     *
+     * @see loggerModem::_pollModemMetaData
+     *
+     * @note This will **not** enable polling for any unset bits in the
+     * provided bitmask.  It will only disable polling for those bits that are
+     * set.
+     */
+    void disableMetadataPolling(uint8_t pollingBitmask);
+
+    /**
+     * @brief Sets the bitmask for modem metadata polling.
+     *
+     * This will enable polling for 1 bits and disable polling for 0 bits.
+     * Setting this to 0 (0b00000000) will disable polling for all metadata
+     * parameters.  Setting it to 256 (0b11111111) will enable polling for all
+     * parameters.
+     *
+     * @param pollingBitmask The bitmask indicating which paramters to poll.
+     *
+     * @see loggerModem::_pollModemMetaData
+     */
+    void setMetadataPolling(uint8_t pollingBitmask);
 
     /**
      * @brief Query the modem for signal quality, battery, and temperature
      * information and store the values to the static internal variables.
      *
-     * @return **bool** True indicates that the communication with the modem was
-     * successful and the values of the internal static variables should be
-     * valid.
+     * @return True indicates that the communication with the modem
+     * was successful and the values of the internal static variables should
+     * be valid.
      */
     virtual bool updateModemMetadata(void);
     /**@}*/
@@ -599,7 +681,7 @@ class loggerModem {
      *
      * @note Does NOT query the modem for a new value.
      *
-     * @return **float** The stored RSSI
+     * @return The stored RSSI
      */
     static float getModemRSSI();
 
@@ -608,7 +690,7 @@ class loggerModem {
      *
      * @note Does NOT query the modem for a new value.
      *
-     * @return **float** The stored signal strength
+     * @return The stored signal strength
      */
     static float getModemSignalPercent();
 
@@ -617,7 +699,7 @@ class loggerModem {
      *
      * @note Does NOT query the modem for a new value.
      *
-     * @return **float** The stored signal percent
+     * @return The stored signal percent
      */
     static float getModemBatteryChargeState();
 
@@ -626,7 +708,7 @@ class loggerModem {
      *
      * @note Does NOT query the modem for a new value.
      *
-     * @return **float** The stored battery charge percent
+     * @return The stored battery charge percent
      */
     static float getModemBatteryChargePercent();
 
@@ -635,7 +717,7 @@ class loggerModem {
      *
      * @note Does NOT query the modem for a new value.
      *
-     * @return **float** The stored battery voltage in mV
+     * @return The stored battery voltage in mV
      */
     static float getModemBatteryVoltage();
 
@@ -644,7 +726,7 @@ class loggerModem {
      *
      * @note Does NOT query the modem for a new value.
      *
-     * @return **float** The stored temperature in degrees Celsius
+     * @return The stored temperature in degrees Celsius
      */
     static float getModemTemperature();
     /**@}*/
@@ -661,7 +743,7 @@ class loggerModem {
      * The RSSI is estimated from a look-up assuming no noise.
      *
      * @param csq A "CSQ" (0-31) signal qualilty
-     * @return **int16_t** An RSSI in dBm, making assumptions about the
+     * @return An RSSI in dBm, making assumptions about the
      * conversion
      */
     static int16_t getRSSIFromCSQ(int16_t csq);
@@ -671,14 +753,14 @@ class loggerModem {
      * The percent is grabbed from a look-up.
      *
      * @param csq A "CSQ" (0-31) signal qualilty
-     * @return **int16_t** The percent of maximum signal strength.
+     * @return The percent of maximum signal strength.
      */
     static int16_t getPctFromCSQ(int16_t csq);
     /**
      * @brief Get signal percent from CSQ.
      *
      * @param rssi The RSSI in dBm.
-     * @return **int16_t** The estimated percent of maximum signal strength.
+     * @return The estimated percent of maximum signal strength.
      */
     static int16_t getPctFromRSSI(int16_t rssi);
     /**@}*/
@@ -711,7 +793,7 @@ class loggerModem {
     /**
      * @brief Check whether there is an active internet connection available.
      *
-     * @return **bool** True if there is an active data connection to the
+     * @return True if there is an active data connection to the
      * internet.
      */
     virtual bool isInternetAvailable(void) = 0;
@@ -720,7 +802,7 @@ class loggerModem {
      * specific module, as opposed to the parts of setup that are common to all
      * modem modules.
      *
-     * @return **bool** True if the unique part of the sleep function ran
+     * @return True if the unique part of the sleep function ran
      * sucessfully.
      */
     virtual bool modemSleepFxn(void) = 0;
@@ -729,7 +811,7 @@ class loggerModem {
      * a specific module, as opposed to the parts of setup that are common to
      * all modem modules.
      *
-     * @return **bool** True if the unique part of the wake function ran
+     * @return True if the unique part of the wake function ran
      * sucessfully - does _NOT_ indicate that the modem is now responsive.
      */
     virtual bool modemWakeFxn(void) = 0;
@@ -741,7 +823,7 @@ class loggerModem {
      * For most modules, this function is created by the #MS_MODEM_EXTRA_SETUP
      * macro which runs the TinyGSM modem init() and client init() functions.
      *
-     * @return **bool** True if the extra setup succeeded.
+     * @return True if the extra setup succeeded.
      */
     virtual bool extraModemSetup(void) = 0;
     /**
@@ -763,7 +845,7 @@ class loggerModem {
      * and am using AT commands to sleep.  This *should* keep everything lined
      * up.
      *
-     * @return **bool** True if the modem is already awake.
+     * @return True if the modem is already awake.
      */
     virtual bool isModemAwake(void) = 0;
     /**@}*/
@@ -778,7 +860,7 @@ class loggerModem {
      * so there is no need to close it
      *
      * @param nistBytes 4 bytes from NIST
-     * @return **uint32_t** the number of seconds since January 1, 1970 00:00:00
+     * @return the number of seconds since January 1, 1970 00:00:00
      * UTC
      */
     static uint32_t parseNISTBytes(byte nistBytes[4]);
@@ -989,6 +1071,56 @@ class loggerModem {
 
     // modemType gsmModem;
     // modemClientType gsmClient;
+
+    // @TODO: Implement these for all modems; most support it.
+
+    /**
+     * @brief The modem hardware version.
+     *
+     * Set in #modemSetup().
+     * Returned as a portion of the #getModemDevId().
+     *
+     * @todo Implement this for modems other than the XBee WiFi
+     */
+    String _modemHwVersion;
+    /**
+     * @brief The modem firmware version.
+     *
+     * Set in #modemSetup().
+     * Returned as a portion of the #getModemDevId().
+     *
+     * @todo Implement this for modems other than the XBee WiFi
+     */
+    String _modemFwVersion;
+    /**
+     * @brief The modem serial number.
+     *
+     * Set in #modemSetup().
+     * Returned as a portion of the #getModemDevId().
+     *
+     * @todo Implement this for modems other than the XBee WiFi
+     */
+    String _modemSerialNumber;
+
+    /**
+     * @brief An 8-bit code for the enabled modem polling variables
+     *
+     * Setting a bit to 0 will disable polling, to 1 will enable it.  By default
+     * no polling is enabled to save time and power by not requesting
+     * unnecessary information from the modem.  When modem measured variables
+     * are attached to a modem, polling for those results is automatically
+     * enabled.
+     *
+     * Bit | Variable Class | Relevent Define
+     * ----|----------------|----------------
+     *  0  | #Modem_RSSI | #MODEM_RSSI_ENABLE_BITMASK
+     *  1  | #Modem_SignalPercent | #MODEM_PERCENT_SIGNAL_ENABLE_BITMASK
+     *  2  | #Modem_BatteryState | #MODEM_BATTERY_STATE_ENABLE_BITMASK
+     *  3  | #Modem_BatteryPercent | #MODEM_BATTERY_PERCENT_ENABLE_BITMASK
+     *  4  | #Modem_BatteryVoltage | #MODEM_BATTERY_VOLTAGE_ENABLE_BITMASK
+     *  5  | #Modem_Temp | #MODEM_TEMPERATURE_ENABLE_BITMASK
+     */
+    uint8_t _pollModemMetaData = 0;
 };
 
 // typedef float (loggerModem::_*loggerGetValueFxn)(void);
@@ -1017,7 +1149,9 @@ class Modem_RSSI : public Variable {
                         const char* varCode = MODEM_RSSI_DEFAULT_CODE)
         : Variable(&parentModem->getModemRSSI, (uint8_t)MODEM_RSSI_RESOLUTION,
                    &*MODEM_RSSI_VAR_NAME, &*MODEM_RSSI_UNIT_NAME, varCode,
-                   uuid) {}
+                   uuid) {
+        parentModem->enableMetadataPolling(MODEM_RSSI_ENABLE_BITMASK);
+    }
     /**
      * @brief Destroy the Modem_RSSI object - no action needed.
      */
@@ -1050,7 +1184,9 @@ class Modem_SignalPercent : public Variable {
         : Variable(&parentModem->getModemSignalPercent,
                    (uint8_t)MODEM_PERCENT_SIGNAL_RESOLUTION,
                    &*MODEM_PERCENT_SIGNAL_VAR_NAME,
-                   &*MODEM_PERCENT_SIGNAL_UNIT_NAME, varCode, uuid) {}
+                   &*MODEM_PERCENT_SIGNAL_UNIT_NAME, varCode, uuid) {
+        parentModem->enableMetadataPolling(MODEM_PERCENT_SIGNAL_ENABLE_BITMASK);
+    }
     /**
      * @brief Destroy the Modem_SignalPercent object - no action needed.
      */
@@ -1086,7 +1222,9 @@ class Modem_BatteryState : public Variable {
         : Variable(&parentModem->getModemBatteryChargeState,
                    (uint8_t)MODEM_BATTERY_STATE_RESOLUTION,
                    &*MODEM_BATTERY_STATE_VAR_NAME,
-                   &*MODEM_BATTERY_STATE_UNIT_NAME, varCode, uuid) {}
+                   &*MODEM_BATTERY_STATE_UNIT_NAME, varCode, uuid) {
+        parentModem->enableMetadataPolling(MODEM_BATTERY_STATE_ENABLE_BITMASK);
+    }
     /**
      * @brief Destroy the Modem_BatteryState object - no action needed.
      */
@@ -1122,7 +1260,10 @@ class Modem_BatteryPercent : public Variable {
         : Variable(&parentModem->getModemBatteryChargePercent,
                    (uint8_t)MODEM_BATTERY_PERCENT_RESOLUTION,
                    &*MODEM_BATTERY_PERCENT_VAR_NAME,
-                   &*MODEM_BATTERY_PERCENT_UNIT_NAME, varCode, uuid) {}
+                   &*MODEM_BATTERY_PERCENT_UNIT_NAME, varCode, uuid) {
+        parentModem->enableMetadataPolling(
+            MODEM_BATTERY_PERCENT_ENABLE_BITMASK);
+    }
     /**
      * @brief Destroy the Modem_BatteryPercent object - no action needed.
      */
@@ -1158,7 +1299,10 @@ class Modem_BatteryVoltage : public Variable {
         : Variable(&parentModem->getModemBatteryVoltage,
                    (uint8_t)MODEM_BATTERY_VOLTAGE_RESOLUTION,
                    &*MODEM_BATTERY_VOLTAGE_VAR_NAME,
-                   &*MODEM_BATTERY_VOLTAGE_UNIT_NAME, varCode, uuid) {}
+                   &*MODEM_BATTERY_VOLTAGE_UNIT_NAME, varCode, uuid) {
+        parentModem->enableMetadataPolling(
+            MODEM_BATTERY_VOLTAGE_ENABLE_BITMASK);
+    }
     /**
      * @brief Destroy the Modem_BatteryVoltage object - no action needed.
      */
@@ -1193,7 +1337,9 @@ class Modem_Temp : public Variable {
         : Variable(&parentModem->getModemTemperature,
                    (uint8_t)MODEM_TEMPERATURE_RESOLUTION,
                    &*MODEM_TEMPERATURE_VAR_NAME, &*MODEM_TEMPERATURE_UNIT_NAME,
-                   varCode, uuid) {}
+                   varCode, uuid) {
+        parentModem->enableMetadataPolling(MODEM_TEMPERATURE_ENABLE_BITMASK);
+    }
     /**
      * @brief Destroy the Modem_Temp object - no action needed.
      */

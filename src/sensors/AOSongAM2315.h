@@ -1,7 +1,8 @@
 /**
  * @file AOSongAM2315.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the AOSongAM2315 sensor subclass and the variable subclasses
@@ -72,11 +73,17 @@
 /** @ingroup sensor_am2315 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_am2315_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by an AOSong AM2315
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the AM2315 can report 2 values.
 #define AM2315_NUM_VARIABLES 2
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define AM2315_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_am2315_timing
@@ -206,7 +213,7 @@ class AOSongAM2315 : public Sensor {
     /**
      * @brief Report the I2C address of the AM2315 - which is always 0xB8.
      *
-     * @return **String** Text describing how the sensor is attached to the mcu.
+     * @return Text describing how the sensor is attached to the mcu.
      */
     String getSensorLocation(void) override;
 
@@ -218,7 +225,7 @@ class AOSongAM2315 : public Sensor {
      * and modes for I2C), and updates the #_sensorStatus.  No sensor power is
      * required.
      *
-     * @return **bool** True if the setup was successful.  For the AOSong AM2315
+     * @return True if the setup was successful.  For the AOSong AM2315
      * the result will always be true.
      */
     bool setup(void) override;
@@ -232,8 +239,11 @@ class AOSongAM2315 : public Sensor {
     /**
      * @brief An internal reference to the hardware Wire instance.
      */
-    TwoWire*         _i2c;
-    Adafruit_AM2315* am2315ptr;  // create a sensor object
+    TwoWire* _i2c;
+    /**
+     * @brief Internal reference to the Adafruit sensor class
+     */
+    Adafruit_AM2315* am2315ptr;
 };
 
 

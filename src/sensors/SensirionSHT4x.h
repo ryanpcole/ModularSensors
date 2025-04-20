@@ -1,7 +1,8 @@
 /**
  * @file SensirionSHT4x.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the SensirionSHT4x sensor subclass and the variable
@@ -81,11 +82,17 @@
 /** @ingroup sensor_sht4x */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_sht4x_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the SHT4x
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the SHT4x can report 2 values.
 #define SHT4X_NUM_VARIABLES 2
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define SHT4X_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_sht4x_timing
@@ -244,7 +251,7 @@ class SensirionSHT4x : public Sensor {
     /**
      * @brief Report the I2C address of the SHT4x - which is always 0x44.
      *
-     * @return **String** Text describing how the sensor is attached to the mcu.
+     * @return Text describing how the sensor is attached to the mcu.
      */
     String getSensorLocation(void) override;
 
@@ -256,7 +263,7 @@ class SensirionSHT4x : public Sensor {
      * and modes for I2C), and updates the #_sensorStatus.  No sensor power is
      * required.
      *
-     * @return **bool** True if the setup was successful.
+     * @return True if the setup was successful.
      */
     bool setup(void) override;
 

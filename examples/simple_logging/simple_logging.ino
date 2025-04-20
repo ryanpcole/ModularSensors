@@ -1,17 +1,15 @@
 /** =========================================================================
- * @file simple_logging.ino
+ * @example{lineno} simple_logging.ino
+ * @copyright Stroud Water Research Center
+ * @license This example is published under the BSD-3 license.
+ * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ *
  * @brief A simple data logging example.
  *
- * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @copyright (c) 2017-2022 Stroud Water Research Center (SWRC)
- *                          and the EnviroDIY Development Team
- *            This example is published under the BSD-3 license.
+ * See [the walkthrough page](@ref example_simple_logging) for detailed
+ * instructions.
  *
- * Build Environment: Visual Studios Code with PlatformIO
- * Hardware Platform: EnviroDIY Mayfly Arduino Datalogger
- *
- * DISCLAIMER:
- * THIS CODE IS PROVIDED "AS IS" - NO WARRANTY IS GIVEN.
+ * @m_examplenavigation{example_simple_logging,}
  * ======================================================================= */
 
 // ==========================================================================
@@ -20,10 +18,6 @@
 /** Start [includes] */
 // The Arduino library is needed for every Arduino program.
 #include <Arduino.h>
-
-// EnableInterrupt is used by ModularSensors for external and pin change
-// interrupts and must be explicitly included in the main program.
-#include <EnableInterrupt.h>
 
 // Include the main header for ModularSensors
 #include <ModularSensors.h>

@@ -1,7 +1,8 @@
 /**
  * @file WatchDogSAMD.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the extendedWatchDogSAMD class.
@@ -82,7 +83,14 @@ class extendedWatchDogSAMD {
     static volatile uint32_t _barksUntilReset;
 
  private:
+    /**
+     * @brief Wait for the SAMD processor bit sync to finish.+
+     */
     void inline waitForWDTBitSync();
+    /**
+     * @brief Internal reference to the number of seconds of silence before the
+     * module is reset.
+     */
     uint32_t _resetTime_s;
 };
 

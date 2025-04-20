@@ -1,7 +1,8 @@
 /**
  * @file MeterTeros11.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Written By: Anthony Aufdenkampe <aaufdenkampe@limno.com>
  * Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
@@ -93,13 +94,19 @@
 /** @ingroup sensor_teros11 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_teros11_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by Meter Teros 11
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the Teros 11 can report 2 raw values -
 /// counts and temperature.
 #define TEROS11_NUM_VARIABLES 4
 /// @brief Sensor::_incCalcValues; We calculate permittivity and water content
 /// from the raw counts and temperature reported by the Teros 11.
 #define TEROS11_INC_CALC_VARIABLES 2
+/**@}*/
 
 /**
  * @anchor sensor_teros11_timing

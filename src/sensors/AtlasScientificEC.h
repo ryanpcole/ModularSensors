@@ -1,7 +1,8 @@
 /**
  * @file AtlasScientificEC.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Initial developement for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
@@ -69,13 +70,15 @@
 #include "VariableBase.h"
 #include "sensors/AtlasParent.h"
 
-
-// Sensor Specific Defines
 /** @ingroup sensor_atlas_cond */
 /**@{*/
 
-/// @brief Default I2C address is 0x64 (100)
-#define ATLAS_COND_I2C_ADDR 0x64
+/**
+ * @anchor sensor_atlas_cond_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the Atlas conductivity sensor
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; Atlas EZO conductivity circuit can report
 /// 4 values.
 #define ATLAS_COND_NUM_VARIABLES 4
@@ -83,7 +86,19 @@
 /// though we recommend users include a temperature sensor and calculate
 /// specific conductance in their own program.
 #define ATLAS_COND_INC_CALC_VARIABLES 0
+/**@}*/
 
+/**
+ * @anchor sensor_atlas_cond_config
+ * @name Configuration Defines
+ * Defines to configure and set the address of the Atlas conductivity
+ * sensor
+ */
+/**@{*/
+/// @brief The default I2C address of the Atlas conductivity sensor is 0x64
+/// (100)
+#define ATLAS_COND_I2C_ADDR 0x64
+/**@}*/
 
 /**
  * @anchor sensor_atlas_cond_timing
@@ -290,7 +305,7 @@ class AtlasScientificEC : public AtlasParent {
      * circuit to report all possible measurement parameters, and sets the
      * status bit if successful.  The circuit must be powered for setup.
      *
-     * @return **bool** True if the setup was successful.
+     * @return True if the setup was successful.
      */
     bool setup(void) override;
 };

@@ -1,7 +1,8 @@
 /**
  * @file AtlasScientificRTD.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Initial developement for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
@@ -50,23 +51,33 @@
 // Included Dependencies
 #include "sensors/AtlasParent.h"
 
-
-/**
- * @brief Default I2C address is 0x66 (102)
- */
-#define ATLAS_RTD_I2C_ADDR 0x66
-
-// Sensor Specific Defines
 /** @ingroup sensor_atlas_rtd */
 /**@{*/
+
 /**
- * @brief Sensor::_numReturnedValues; the Atlas EZO temperature circuit can
- * report 1 value.
+ * @anchor sensor_atlas_rtd_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the Atlas RTD (temperature)
+ * sensor
  */
+/**@{*/
+/// @brief Sensor::_numReturnedValues; the Atlas EZO temperature circuit can
+/// report 1 value.
 #define ATLAS_RTD_NUM_VARIABLES 1
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define ATLAS_RTD_INC_CALC_VARIABLES 0
+/**@}*/
 
+/**
+ * @anchor sensor_atlas_rtd_config
+ * @name Configuration Defines
+ * Defines to configure and set the address of the Atlas RTD (temperature)
+ * sensor
+ */
+/**@{*/
+/// @brief The default I2C address of the Atlas RTD sensor is 0x66 (102)
+#define ATLAS_RTD_I2C_ADDR 0x66
+/**@}*/
 
 /**
  * @anchor sensor_atlas_rtd_timing

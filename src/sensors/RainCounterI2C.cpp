@@ -1,7 +1,8 @@
 /**
  * @file RainCounterI2C.cpp
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Written By: Bobby Schulz <schu3119@umn.edu>
  * Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
@@ -12,7 +13,7 @@
 
 
 // The constructors
-#if defined MS_RAIN_SOFTWAREWIRE
+#if defined(MS_RAIN_SOFTWAREWIRE)
 RainCounterI2C::RainCounterI2C(SoftwareWire* theI2C, uint8_t i2cAddressHex,
                                float rainPerTip)
     : Sensor("RainCounterI2C", BUCKET_NUM_VARIABLES, BUCKET_WARM_UP_TIME_MS,
@@ -51,7 +52,7 @@ RainCounterI2C::RainCounterI2C(uint8_t i2cAddressHex, float rainPerTip)
 
 
 // Destructors
-#if defined MS_RAIN_SOFTWAREWIRE
+#if defined(MS_RAIN_SOFTWAREWIRE)
 // If we created a new SoftwareWire instance, we need to destroy it or
 // there will be a memory leak
 RainCounterI2C::~RainCounterI2C() {
@@ -62,8 +63,8 @@ RainCounterI2C::~RainCounterI2C() {}
 #endif
 
 
-String      RainCounterI2C::getSensorLocation(void) {
-#if defined MS_RAIN_SOFTWAREWIRE
+String RainCounterI2C::getSensorLocation(void) {
+#if defined(MS_RAIN_SOFTWAREWIRE)
     String address = F("SoftwareWire");
     if (_dataPin >= 0) address += _dataPin;
     address += F("_0x");

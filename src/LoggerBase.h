@@ -1,7 +1,8 @@
 /**
  * @file LoggerBase.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the LoggerBase class which handles basic logging functions.
@@ -16,6 +17,11 @@
 
 // Debugging Statement
 // #define MS_LOGGERBASE_DEBUG
+
+/**
+ * @brief Set default clock for SAMD21 as DS3231 instead of built-in RTC
+ */
+#define MS_SAMD_DS3231
 
 #ifdef MS_LOGGERBASE_DEBUG
 #define MS_DEBUGGING_STD "LoggerBase"
@@ -35,9 +41,11 @@
 // Bring in the libraries to handle the processor sleep/standby modes
 // The SAMD library can also the built-in clock on those modules
 #if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_SAMD_ZERO)
+#if !defined(MS_SAMD_DS3231)
 #include <RTCZero.h>
+#endif
 #include "WatchDogs/WatchDogSAMD.h"
-#elif defined(ARDUINO_ARCH_AVR) || defined(__AVR__)
+#elif defined(__AVR__) || defined(ARDUINO_ARCH_AVR)
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include "WatchDogs/WatchDogAVR.h"
@@ -47,6 +55,7 @@
 // clock This also implements a needed date/time class
 #include <Sodaq_DS3231.h>
 
+#ifndef EPOCH_TIME_OFF
 /**
  * @brief January 1, 2000 00:00:00 in "epoch" time
  *
@@ -55,6 +64,7 @@
  * epoch beginning 1970-jan-01 00:00:00.
  */
 #define EPOCH_TIME_OFF 946684800
+#endif
 
 #include <SdFat.h>  // To communicate with the SD card
 
@@ -105,9 +115,9 @@ class Logger {
      * @param mcuWakePin The pin used to wake the logger from deep sleep -
      * expected to be attached to an alarm pin of the real-time clock.  Use a
      * value of -1 to prevent the board from sleeping.
-     * @param inputArray A variableArray object instance providing data to be
-     * logged.  This is NOT an array of variables, but an object of the variable
-     * array class.
+     * @param inputArray A pointer to a variableArray object instance providing
+     * data to be logged.  This is NOT an array of variables, but an object of
+     * the variable array class.
      */
     Logger(const char* loggerID, uint16_t loggingIntervalMinutes,
            int8_t SDCardSSPin, int8_t mcuWakePin, VariableArray* inputArray);
@@ -157,7 +167,7 @@ class Logger {
     /**
      * @brief Get the Logger ID.
      *
-     * @return **const char\*** A pointer to the logger ID
+     * @return A pointer to the logger ID
      */
     const char* getLoggerID() {
         return _loggerID;
@@ -173,7 +183,7 @@ class Logger {
     /**
      * @brief Get the Logging Interval.
      *
-     * @return **uint16_t** The logging interval in minutes
+     * @return The logging interval in minutes
      */
     uint16_t getLoggingInterval() {
         return _loggingIntervalMinutes;
@@ -189,7 +199,7 @@ class Logger {
     /**
      * @brief Get the Sampling Feature UUID.
      *
-     * @return **const char\*** The sampling feature UUID
+     * @return The sampling feature UUID
      */
     const char* getSamplingFeatureUUID() {
         return _samplingFeatureUUID;
@@ -392,6 +402,11 @@ class Logger {
      */
     uint16_t _loggingIntervalMinutes = 5;
     /**
+     * @brief The initial number of samples to log at an interval of 1 minute
+     * for fast field verification
+     */
+    uint8_t _initialShortIntervals = 5;
+    /**
      * @brief Digital pin number on the mcu controlling the SD card slave
      * select.
      */
@@ -405,6 +420,15 @@ class Logger {
      * deep-sleep.
      */
     int8_t _mcuWakePin = -1;
+    /**
+     * @brief The pin mode used for wake up on the clock alert pin.
+     *
+     * Must be either `INPUT` OR `INPUT_PULLUP` with an AVR board.  On a SAM/D
+     * board `INPUT_PULLDOWN` is also an option.  Optional with a default value
+     * of `INPUT_PULLUP`.  The DS3231 has an active low interrupt, so the
+     * pull-up resistors should be enabled.
+     */
+    uint8_t _wakePinMode = INPUT_PULLUP;
     /**
      * @brief Digital pin number on the mcu used to output an alert that the
      * logger is measuring.
@@ -440,15 +464,15 @@ class Logger {
     /**
      * @brief Set the variable array object.
      *
-     * @param inputArray A variable array object instance.  This is NOT an array
-     * of variables, but an object of the variable array class.
+     * @param inputArray A pointer to a variable array object instance.  This is
+     * NOT an array of variables, but an object of the variable array class.
      */
     void setVariableArray(VariableArray* inputArray);
 
     /**
      * @brief Get the number of variables in the internal variable array object.
      *
-     * @return **uint8_t** The number of variables in the internal variable
+     * @return The number of variables in the internal variable
      * array object
      */
     uint8_t getArrayVarCount();
@@ -458,7 +482,7 @@ class Logger {
      * position in the internal variable array object.
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The name of the parent sensor of that variable, if
+     * @return The name of the parent sensor of that variable, if
      * applicable.
      */
     String getParentSensorNameAtI(uint8_t position_i);
@@ -467,7 +491,7 @@ class Logger {
      * at the given position in the internal variable array object.
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The concatenated name and pin location of the parent
+     * @return The concatenated name and pin location of the parent
      * sensor of that variable, if applicable.
      */
     String getParentSensorNameAndLocationAtI(uint8_t position_i);
@@ -479,7 +503,7 @@ class Logger {
      * http://vocabulary.odm2.org/variablename/
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The variable name
+     * @return The variable name
      */
     String getVarNameAtI(uint8_t position_i);
     /**
@@ -490,7 +514,7 @@ class Logger {
      * http://vocabulary.odm2.org/units/
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The variable unit
+     * @return The variable unit
      */
     String getVarUnitAtI(uint8_t position_i);
     /**
@@ -498,7 +522,7 @@ class Logger {
      * the internal variable array object.
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The variable code
+     * @return The variable code
      */
     String getVarCodeAtI(uint8_t position_i);
     /**
@@ -506,7 +530,7 @@ class Logger {
      * variable array object.
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The variable UUID
+     * @return The variable UUID
      */
     String getVarUUIDAtI(uint8_t position_i);
     /**
@@ -514,10 +538,28 @@ class Logger {
      * the internal variable array object.
      *
      * @param position_i The position of the variable in the array.
-     * @return **String** The value of the variable as a string with the correct
+     * @return The value of the variable as a float.
+     */
+    float getValueAtI(uint8_t position_i);
+    /**
+     * @brief Get the most recent value of the variable at the given position in
+     * the internal variable array object.
+     *
+     * @param position_i The position of the variable in the array.
+     * @return The value of the variable as a string with the correct
      * number of significant figures.
      */
     String getValueStringAtI(uint8_t position_i);
+    /**
+     * @brief Get the string representing a particular value of the variable at
+     * the given position in the internal variable array object.
+     *
+     * @param position_i The position of the variable in the array.
+     * @param value The value to format.
+     * @return The given value as a string with the correct number of
+     *  significant figures.
+     */
+    String formatValueStringAtI(uint8_t position_i, float value);
 
  protected:
     /**
@@ -552,7 +594,7 @@ class Logger {
      * @brief Use the attahed loggerModem to synchronize the real-time clock
      * with NIST time servers.
      *
-     * @return **bool** True if clock synchronization was successful
+     * @return True if clock synchronization was successful
      */
     bool syncRTC();
 
@@ -613,7 +655,7 @@ class Logger {
     /**
      * @brief Get the Logger Time Zone.
      *
-     * @return **int8_t** The timezone data is be saved to the SD card in.  This
+     * @return The timezone data is be saved to the SD card in.  This
      * is not be the same as the timezone of the real time clock.
      */
     static int8_t getLoggerTimeZone(void);
@@ -633,7 +675,7 @@ class Logger {
      *
      * @m_deprecated_since{0,22,4}
      *
-     * @return **int8_t** The timezone data is be saved to the SD card in.  This
+     * @return The timezone data is be saved to the SD card in.  This
      * is not be the same as the timezone of the real time clock.
      */
     static int8_t getTimeZone(void);
@@ -649,7 +691,7 @@ class Logger {
     /**
      * @brief Get the timezone of the real-time clock (RTC).
      *
-     * @return **int8_t** The timezone of the real-time clock (RTC)
+     * @return The timezone of the real-time clock (RTC)
      */
     static int8_t getRTCTimeZone(void);
 
@@ -669,15 +711,13 @@ class Logger {
      * @brief Get the offset between the built-in clock and the time zone
      * where the data is being recorded.
      *
-     * @return **int8_t** The offset between the built-in clock and the time
+     * @return The offset between the built-in clock and the time
      * zone where the data is being recorded.
      */
     static int8_t getTZOffset(void);
 
-// This gets the current epoch time (unix time, ie, the number of seconds
-// from January 1, 1970 00:00:00 UTC) and corrects it for the specified time
-// zone
-#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_SAMD_ZERO)
+#if (defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_SAMD_ZERO)) && \
+    !defined(MS_SAMD_DS3231)
     /**
      * @brief The RTC object.
      *
@@ -692,7 +732,7 @@ class Logger {
      * number of seconds from January 1, 1970 00:00:00) and correct it to the
      * logging time zone.
      *
-     * @return **uint32_t**  The number of seconds from January 1, 1970 in the
+     * @return  The number of seconds from January 1, 1970 in the
      * logging time zone.
      *
      * @m_deprecated_since{0,33,0}
@@ -704,7 +744,7 @@ class Logger {
      * number of seconds from January 1, 1970 00:00:00) and correct it to the
      * logging time zone.
      *
-     * @return **uint32_t**  The number of seconds from January 1, 1970 in the
+     * @return  The number of seconds from January 1, 1970 in the
      * logging time zone.
      */
     static uint32_t getNowLocalEpoch(void);
@@ -714,7 +754,7 @@ class Logger {
      * the RTC (unix time, ie, the number of seconds from January 1, 1970
      * 00:00:00 UTC)
      *
-     * @return **uint32_t**  The number of seconds from 1970-01-01T00:00:00Z0000
+     * @return  The number of seconds from 1970-01-01T00:00:00Z0000
      */
     static uint32_t getNowUTCEpoch(void);
     /**
@@ -734,7 +774,7 @@ class Logger {
      * object instance.
      *
      * @param epochTime The number of seconds since 1970.
-     * @return **DateTime** The equivalent DateTime
+     * @return The equivalent DateTime
      */
     static DateTime dtFromEpoch(uint32_t epochTime);
 
@@ -745,7 +785,7 @@ class Logger {
      * the LOGGER's offset as the time zone offset in the string.
      *
      * @param dt A DateTime object to convert
-     * @return **String** An ISO8601 formatted String.
+     * @return An ISO8601 formatted String.
      */
     static String formatDateTime_ISO8601(DateTime& dt);
 
@@ -756,7 +796,7 @@ class Logger {
      * the LOGGER's offset as the time zone offset in the string.
      *
      * @param epochTime The number of seconds since 1970.
-     * @return **String** An ISO8601 formatted String.
+     * @return An ISO8601 formatted String.
      */
     static String formatDateTime_ISO8601(uint32_t epochTime);
 
@@ -765,7 +805,7 @@ class Logger {
      * clock to the given time.
      *
      * @param UTCEpochSeconds The number of seconds since 1970 in UTC.
-     * @return **bool** True if the input timestamp passes sanity checks **and**
+     * @return True if the input timestamp passes sanity checks **and**
      * the clock has been successfully set.
      */
     bool setRTClock(uint32_t UTCEpochSeconds);
@@ -775,7 +815,7 @@ class Logger {
      *
      * To be sane the clock  must be between 2020 and 2030.
      *
-     * @return **bool** True if the current time on the RTC passes sanity range
+     * @return True if the current time on the RTC passes sanity range
      * checking
      */
     static bool isRTCSane(void);
@@ -786,7 +826,7 @@ class Logger {
      * To be sane the clock  must be between 2020 and 2025.
      *
      * @param epochTime The epoch time to be checked.
-     * @return **bool** True if the given time passes sanity range checking.
+     * @return True if the given time passes sanity range checking.
      */
     static bool isRTCSane(uint32_t epochTime);
 
@@ -805,7 +845,7 @@ class Logger {
     /**
      * @brief Check if the CURRENT time is an even interval of the logging rate
      *
-     * @return **bool** True if the current time on the RTC is an even interval
+     * @return True if the current time on the RTC is an even interval
      * of the logging rate.
      */
     bool checkInterval(void);
@@ -819,7 +859,7 @@ class Logger {
      * printing, etc) have the same timestamp even though the update routine may
      * take several (or many) seconds.
      *
-     * @return **bool** True if the marked time is an even interval of the
+     * @return True if the marked time is an even interval of the
      * logging rate.
      */
     bool checkMarkedInterval(void);
@@ -847,6 +887,75 @@ class Logger {
      * @anchor logger_sleep
      * @name Clock and Timezones
      * Public Functions for sleeping the logger
+     *
+     * # AVR Sleep modes
+     *
+     * In the avr/sleep.h file, the call names of these 5 sleep modes are:
+     * SLEEP_MODE_IDLE         - the least power savings
+     * SLEEP_MODE_ADC
+     * SLEEP_MODE_PWR_SAVE
+     * SLEEP_MODE_STANDBY
+     * SLEEP_MODE_PWR_DOWN     - the most power savings
+     *
+     * # SAMD21 Sleep Modes
+     *
+     * > The SAM D21/DA1 have two software-selectable sleep modes, Idle and
+     * > Stand-by.
+     * > In Idle mode, the CPU is stopped while all other functions can be kept
+     * > running.
+     * > In Stand-by mode, all clocks and functions are stopped, expect those
+     * > selected to continue running.
+     * > The device supports SleepWalking.
+     * > This feature allows the peripheral to wake up from sleep based on
+     * > predefined conditions, and thus allows the CPU to wake up only when
+     * > needed, e.g., when a threshold is crossed or a result is ready.
+     * > The Event System supports synchronous and asynchronous events, allowing
+     * > peripherals to receive, react to and send events even in Stand-by mode.
+     *
+     * # SAMD51 Sleep Modes
+     *
+     * > The device can be set in a sleep mode. In sleep mode, the CPU is
+     * > stopped and the peripherals are either active or idle, according to the
+     * > sleep mode depth:
+     * >
+     * >  - Idle sleep mode:
+     * >    - The CPU is stopped.
+     * >    - Synchronous clocks are stopped except when requested.
+     * >    - The logic is retained.
+     * >  - Standby sleep mode:
+     * >    - The CPU is stopped as well as the peripherals.
+     * >    - The logic is retained, and power domain gating can be used to
+     * > fully or partially turn off the PDSYSRAM power domain.
+     * >  - Hibernate sleep mode:
+     * >    - PDCORESW power domain is turned OFF.
+     * >    - The backup power domain is kept powered to allow few features to
+     * > run (RTC, 32KHz clock sources, and wake-up from external pins).
+     * >    - The PDSYSRAM power domain can be retained according to software
+     * > configuration.
+     * >  - Backup sleep mode:
+     * >    - Only the backup domain is kept powered to allow few features to
+     * > run (RTC, 32KHz clock sources, and wake-up from external pins).
+     * >    - The PDBKUPRAM power domain can be retained according to software
+     * > configuration.
+     * >  - Off sleep mode:
+     * >    - The entire device is powered off.
+     *
+     * ## Bit Settings
+     * | Value |    Name   |                 Definition                 |
+     * |:-----:|:---------:|:------------------------------------------:|
+     * | 0x0   | Reserved  | -                                          |
+     * | 0x1   | Reserved  | -                                          |
+     * | 0x2   | IDLE      | CPU, AHBx, and APBx clocks are OFF         |
+     * | 0x3   | Reserved  | Reserved                                   |
+     * | 0x4   | STANDBY   | All Clocks are OFF                         |
+     * | 0x5   | HIBERNATE | Backup domain is ON as well as some PDRAMs |
+     * | 0x6   | BACKUP    | Only Backup domain is powered ON           |
+     * | 0x7   | OFF       | All power domains are powered OFF          |
+     *
+     * @note For the SAMD51, hibernate, backup, and off modes cause a full
+     * system reset on wake. Because we don't want to fully reset the device
+     * (and go back to the setup) on wake, the lowest power mode we can use is
+     * standby.
      */
     /**@{*/
     // ===================================================================== //
@@ -857,7 +966,7 @@ class Logger {
      *
      * In this case, we're doing nothing, we just want the processor to wake.
      * This must be a static function (which means it can only call other static
-     * funcions.)
+     * functions.)
      */
     static void wakeISR(void);
 
@@ -920,7 +1029,7 @@ class Logger {
      * an auto-generated filename which is a concatenation of the logger id and
      * the date when the file was started.
      *
-     * @return **String** The name of the file data is currently being saved to.
+     * @return The name of the file data is currently being saved to.
      */
     String getFileName(void) {
         return _fileName;
@@ -958,7 +1067,7 @@ class Logger {
      * @param filename The name of the file to create
      * @param writeDefaultHeader True to write a header to the file, default is
      * false
-     * @return **bool** True if the file was successfully created.
+     * @return True if the file was successfully created.
      */
     bool createLogFile(String& filename, bool writeDefaultHeader = false);
     /**
@@ -972,7 +1081,7 @@ class Logger {
      *
      * @param writeDefaultHeader True to write a header to the file, default is
      * false
-     * @return **bool** True if the file was successfully created.
+     * @return True if the file was successfully created.
      */
     bool createLogFile(bool writeDefaultHeader = false);
 
@@ -986,7 +1095,7 @@ class Logger {
      *
      * @param filename The name of the file to write to
      * @param rec The line to be written to the file
-     * @return **bool** True if the file was successfully accessed or created
+     * @return True if the file was successfully accessed or created
      * _and_ data appended to it.
      */
     bool logToSD(String& filename, String& rec);
@@ -999,7 +1108,7 @@ class Logger {
      * modified and accessed timestamps of the file to the current time.
      *
      * @param rec The line to be written to the file
-     * @return **bool** True if the file was successfully accessed or created
+     * @return True if the file was successfully accessed or created
      * _and_ data appended to it.
      */
     bool logToSD(String& rec);
@@ -1012,7 +1121,7 @@ class Logger {
      * attempt to create the file and add a header to it.  Set the modified and
      * accessed timestamps of the file to the current time.
      *
-     * @return **bool** True if the file was successfully accessed or created
+     * @return True if the file was successfully accessed or created
      * _and_ data appended to it.
      */
     bool logToSD(void);
@@ -1039,7 +1148,7 @@ class Logger {
      * We run this check before every communication with the SD card to prevent
      * hanging.
      *
-     * @return **bool** True if the SD card is ready
+     * @return True if the SD card is ready
      */
     bool initializeSDCard(void);
 
@@ -1057,7 +1166,7 @@ class Logger {
      * @param stampFlag The "flag" of the timestamp to change - should be
      * T_CREATE, T_WRITE, or T_ACCESS
      */
-    void setFileTimestamp(File fileToStamp, uint8_t stampFlag);
+    void setFileTimestamp(File& fileToStamp, uint8_t stampFlag);
 
     /**
      * @brief Open or creates a file, converting a string file name to a
@@ -1067,7 +1176,7 @@ class Logger {
      * @param createFile True to create the file if it did not already exist
      * @param writeDefaultHeader True to add a header to the file if it is
      * created
-     * @return **bool** True if a file was successfully opened or created.
+     * @return True if a file was successfully opened or created.
      */
     bool openFile(String& filename, bool createFile, bool writeDefaultHeader);
     /**@}*/
@@ -1102,8 +1211,11 @@ class Logger {
      * to the "main" output - ie Serial - and NOT to the SD card.  After 25
      * measurements, the sensors are put to sleep, the modem is disconnected
      * from the internet, and the logger goes back to sleep.
+     *
+     * @param sleepBeforeReturning True to put the logger to sleep before
+     * returning from the function; optional with a default value of true.
      */
-    virtual void testingMode();
+    virtual void testingMode(bool sleepBeforeReturning = true);
     /**@}*/
 
     // ===================================================================== //
@@ -1159,14 +1271,24 @@ class Logger {
 
     /**
      * @brief This is a one-and-done to log data
+     *
+     * @param sleepBeforeReturning True to put the logger to sleep before
+     * returning from the function; optional with a default value of true.
+     * @note If sleepBeforeReturning is set to false, the logger WILL NOT sleep
+     * between readings.
      */
-    virtual void logData(void);
+    virtual void logData(bool sleepBeforeReturning = true);
 
     /**
      * @brief This is a one-and-done to log data and publish the results to any
      * associated publishers.
+     *
+     * @param sleepBeforeReturning True to put the logger to sleep before
+     * returning from the function; optional with a default value of true.
+     * @note If sleepBeforeReturning is set to false, the logger WILL NOT sleep
+     * between readings.
      */
-    void logDataAndPublish(void);
+    void logDataAndPublish(bool sleepBeforeReturning = true);
 
     /**
      * @brief The static "marked" epoch time for the local timezone.

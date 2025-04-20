@@ -1,7 +1,8 @@
 /**
  * @file YosemitechY511.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the YosemitechY511 sensor subclass and the variable
@@ -56,11 +57,17 @@
 /** @ingroup sensor_y511 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_y511_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by a Yosemitch Y511
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the Y511 can report 2 values.
 #define Y511_NUM_VARIABLES 2
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define Y511_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_y511_timing

@@ -1,7 +1,8 @@
 /**
  * @file Decagon5TM.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the Decagon5TM subclass of the SDI12Sensors class along with
@@ -83,12 +84,18 @@
 /** @ingroup sensor_fivetm */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_fivetm_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the Decagon 5TM
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the 5TM can report 3 values.
 #define TM_NUM_VARIABLES 3
 /// @brief Sensor::_incCalcValues; volumetric water content is calculated from
 /// the permittivity and the temperature.
 #define TM_INC_CALC_VARIABLES 1
+/**@}*/
 
 /**
  * @anchor sensor_fivetm_timing

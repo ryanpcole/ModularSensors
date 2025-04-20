@@ -1,7 +1,8 @@
 /**
  * @file DecagonES2.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the DecagonES2 subclass of the SDI12Sensors class along with
@@ -63,11 +64,17 @@
 /** @ingroup sensor_es2 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_es2_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by Decagon ES2
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the ES2 can report 2 values.
 #define ES2_NUM_VARIABLES 2
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define ES2_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_es2_timing

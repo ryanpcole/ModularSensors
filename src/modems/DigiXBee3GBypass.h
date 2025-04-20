@@ -1,7 +1,8 @@
 /**
  * @file DigiXBee3GBypass.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the DigiXBee3GBypass subclass of the DigiXBee class for Digi
@@ -57,9 +58,6 @@
 #define MS_DEBUGGING_STD "DigiXBee3GBypass"
 #endif
 
-/** @ingroup modem_digi_3g_bypass */
-/**@{*/
-
 /**
  * @brief The modem type for the underlying TinyGSM library.
  */
@@ -82,6 +80,8 @@
 #include <StreamDebugger.h>
 #endif
 
+/** @ingroup modem_digi_3g_bypass */
+/**@{*/
 
 /**
  * @brief The loggerModem subclass for [Digi Cellular XBee's](@ref modem_digi)
@@ -134,8 +134,8 @@ class DigiXBee3GBypass : public DigiXBee {
     uint32_t getNISTTime(void) override;
 
     bool  getModemSignalQuality(int16_t& rssi, int16_t& percent) override;
-    bool  getModemBatteryStats(uint8_t& chargeState, int8_t& percent,
-                               uint16_t& milliVolts) override;
+    bool  getModemBatteryStats(int8_t& chargeState, int8_t& percent,
+                               int16_t& milliVolts) override;
     float getModemChipTemperature(void) override;
 
     bool modemHardReset(void) override;
@@ -162,13 +162,13 @@ class DigiXBee3GBypass : public DigiXBee {
      * bypass), enables pin sleep, sets the DIO pins to the expected functions,
      * and reboots the modem to ensure all settings are applied.
      *
-     * @return **bool** True if the extra setup succeeded.
+     * @return True if the extra setup succeeded.
      */
     bool extraModemSetup(void) override;
     bool isModemAwake(void) override;
 
  private:
-    const char* _apn;
+    const char* _apn;  ///< Internal reference to the cellular APN
 };
 /**@}*/
 #endif  // SRC_MODEMS_DIGIXBEE3GBYPASS_H_

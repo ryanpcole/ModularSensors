@@ -1,7 +1,8 @@
 /**
  * @file DecagonCTD.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the DecagonCTD subclass of the SDI12Sensors class along with
@@ -68,11 +69,17 @@
 /** @ingroup sensor_decagon_ctd */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_decagon_ctd_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by Decagon CTD
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the CTD can report 3 values.
 #define CTD_NUM_VARIABLES 3
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define CTD_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_decagon_ctd_timing

@@ -1,7 +1,8 @@
 /**
  * @file YosemitechY532.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the YosemitechY532 sensor subclass and the variable
@@ -56,11 +57,17 @@
 /** @ingroup sensor_y532 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_y532_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by a Yosemitch Y532
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the Y532 can report 3 values.
 #define Y532_NUM_VARIABLES 3
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define Y532_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_y532_timing

@@ -1,7 +1,8 @@
 /**
  * @file AtlasScientificpH.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Initial developement for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
@@ -47,18 +48,31 @@
 // Included Dependencies
 #include "sensors/AtlasParent.h"
 
-
-// Sensor Specific Defines
 /** @ingroup sensor_atlas_ph */
 /**@{*/
 
-/// @brief Default I2C address is 0x63 (99)
-#define ATLAS_PH_I2C_ADDR 0x63
+/**
+ * @anchor sensor_atlas_ph_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the Atlas pH sensor
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the Atlas EZO pH circuit can report 1
 /// value.
 #define ATLAS_PH_NUM_VARIABLES 1
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define ATLAS_PH_INC_CALC_VARIABLES 0
+/**@}*/
+
+/**
+ * @anchor sensor_atlas_ph_config
+ * @name Configuration Defines
+ * Defines to configure and set the address of the Atlas pH sensor
+ */
+/**@{*/
+/// @brief The default I2C address of the Atlas pH sensor is 0x63 (99)
+#define ATLAS_PH_I2C_ADDR 0x63
+/**@}*/
 
 /**
  * @anchor sensor_atlas_ph_timing

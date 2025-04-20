@@ -1,7 +1,8 @@
 /**
  * @file ZebraTechDOpto.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the ZebraTechDOpto sensor subclass and the variable
@@ -58,16 +59,22 @@
 /** @ingroup sensor_dopto */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_dopto_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by a ZebraTech D-Opto
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the D-Opto can report 3 values.
 #define DOPTO_NUM_VARIABLES 3
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define DOPTO_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_dopto_timing
  * @name Sensor Timing
- * The sensor timing for an ZebraTech D-Opto
+ * The sensor timing for a ZebraTech D-Opto
  */
 /**@{*/
 /// @brief Sensor::_warmUpTime_ms; the D-Opto warms up in 275ms.  Maximum
@@ -99,7 +106,7 @@
 /**
  * @anchor sensor_dopto_temp
  * @name Temperature
- * The temperature variable from an ZebraTech D-Opto
+ * The temperature variable from a ZebraTech D-Opto
  * - Range is not specified in sensor datasheet
  * - Accuracy is ± 0.1°C
  *
@@ -126,7 +133,7 @@
 /**
  * @anchor sensor_dopto_dopercent
  * @name Dissolved Oxygen Percent Saturation
- * The percent saturation variable from an ZebraTech D-Opto
+ * The percent saturation variable from a ZebraTech D-Opto
  * - Range is not specified in sensor datasheet
  * - Accuracy is 1 % of reading or 0.02PPM, whichever is greater
  *
@@ -154,7 +161,7 @@
 /**
  * @anchor sensor_dopto_domgl
  * @name Dissolved Oxygen Concentration
- * The DO concentration variable from an ZebraTech D-Opto
+ * The DO concentration variable from a ZebraTech D-Opto
  * - Range is not specified in sensor datasheet
  * - Accuracy is 1 % of reading or 0.02PPM, whichever is greater
  *

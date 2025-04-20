@@ -1,17 +1,15 @@
 /** =========================================================================
- * @file single_sensor.ino
+ * @example{lineno} single_sensor.ino
+ * @copyright Stroud Water Research Center
+ * @license This example is published under the BSD-3 license.
+ * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ *
  * @brief An example using only sensor functions and no logging.
  *
- * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @copyright (c) 2017-2022 Stroud Water Research Center (SWRC)
- *                          and the EnviroDIY Development Team
- *            This example is published under the BSD-3 license.
+ * See [the walkthrough page](@ref example_single_sensor) for detailed
+ * instructions.
  *
- * Build Environment: Visual Studios Code with PlatformIO
- * Hardware Platform: EnviroDIY Mayfly Arduino Datalogger
- *
- * DISCLAIMER:
- * THIS CODE IS PROVIDED "AS IS" - NO WARRANTY IS GIVEN.
+ * @m_examplenavigation{example_single_sensor,}
  * ======================================================================= */
 
 // ==========================================================================

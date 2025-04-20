@@ -1,7 +1,8 @@
 /**
  * @file KellerNanolevel.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Written By: Anthony Aufdenkampe <aaufdenkampe@limno.com> and Neil
  * Hancock Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
@@ -45,7 +46,6 @@
 // Included Dependencies
 #include "sensors/KellerParent.h"
 
-// Sensor Specific Defines
 /** @ingroup sensor_nanolevel */
 /**@{*/
 
@@ -168,7 +168,9 @@ class KellerNanolevel : public KellerParent {
               measurementsToAverage, Nanolevel_kellerModel, "KellerNanolevel",
               KELLER_NUM_VARIABLES, NANOLEVEL_WARM_UP_TIME_MS,
               NANOLEVEL_STABILIZATION_TIME_MS, NANOLEVEL_MEASUREMENT_TIME_MS) {}
-    // Destructor
+    /**
+     * @brief Destroy the Keller Nanolevel object
+     */
     ~KellerNanolevel() {}
 };
 

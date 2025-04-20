@@ -1,7 +1,8 @@
 /**
  * @file DigiXBee.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the DigiXBee modem subclass of loggerModem, which itself is a
@@ -31,9 +32,23 @@
  *
  * @section modem_digi_mayfly-and-digi-xbee-connections Mayfly and Digi XBee Connections
  *
+ * @subsection modem_digi_raw_pins_1x Pin Numbers for connecting Digi XBee's Directly to a Mayfly v1.x
+ *
+ * This applies to _all_ Digi XBees and XBee3's when attached directly to the Mayfly's bee slot.
+ *
+ * @code{cpp}
+ * const int8_t modemVccPin = 18;      // MCU pin controlling modem power
+ * const bool useCTSforStatus = true;  // Flag to use the XBee `CTS` pin for status
+ * const int8_t modemStatusPin = 19;   // MCU pin used to read modem status
+ * const int8_t modemResetPin = A5;    // MCU pin connected to modem reset pin
+ * const int8_t modemSleepRqPin = 23;  // MCU pin used for modem sleep/wake request
+ * const int8_t modemLEDPin = redLED;  // MCU pin connected an LED to show modem status
+ * @endcode
+ *
  * @subsection modem_digi_raw_pins Pin Numbers for connecting Digi XBee's Directly to a Mayfly v0.3-v0.5c
  *
  * This applies to _all_ Digi XBees and XBee3's when attached directly to the Mayfly's bee slot.
+ *
  * @code{cpp}
  * const int8_t modemVccPin = -1;      // MCU pin controlling modem power
  * const bool useCTSforStatus = true;  // Flag to use the XBee `CTS` pin for status
@@ -84,9 +99,20 @@
 #define MS_DEBUGGING_STD "DigiXBee"
 #endif
 
+// Included Dependencies
+#include "ModSensorDebugger.h"
+#undef MS_DEBUGGING_STD
+#include "LoggerModem.h"
+
 /** @ingroup modem_digi */
 /**@{*/
 
+/**
+ * @anchor modem_digi_pins_timing
+ * @name Modem Pin Settings and Timing
+ * The timing and pin level settings for a Digi XBee
+ */
+/**@{*/
 /**
  * @brief The loggerModem::_statusTime_ms.
  *
@@ -96,7 +122,7 @@
  *     - the `ON/SLEEP_N/DIO9` will be `HIGH` when the XBee is awake
  * (ie, yes, I am not sleeping)
  *     - but the `CTS_N/DIO7` will be `LOW` when the
- * board is away (ie, no it's not not clear to send).
+ * board is awake (ie, no it's not not clear to send).
  *
  * To use the `CTS_N/DIO7` as the status indicator, set useCTSStatus to true in
  * the constructor.
@@ -151,12 +177,7 @@
  * R4 on the LTE-M model takes nearly that long to shut down.
  */
 #define XBEE_DISCONNECT_TIME_MS 15000L
-
-// Included Dependencies
-#include "ModSensorDebugger.h"
-#undef MS_DEBUGGING_STD
-#include "LoggerModem.h"
-
+/**@}*/
 
 /**
  * @brief The parent class for all [Digi XBee and XBee3](@ref modem_digi) wifi

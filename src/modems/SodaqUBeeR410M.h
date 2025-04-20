@@ -1,7 +1,8 @@
 /**
  * @file SodaqUBeeR410M.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the SodaqUBeeR410M subclass of loggerModem for the Sodaq UBee
@@ -119,9 +120,6 @@
 #define MS_DEBUGGING_STD "SodaqUBeeR410M"
 #endif
 
-/** @ingroup modem_ubee_ltem */
-/**@{*/
-
 /**
  * @brief The modem type for the underlying TinyGSM library.
  */
@@ -133,7 +131,25 @@
 #define TINY_GSM_RX_BUFFER 64
 #endif
 
+// Included Dependencies
+#include "ModSensorDebugger.h"
+#undef MS_DEBUGGING_STD
+#include "TinyGsmClient.h"
+#include "LoggerModem.h"
 
+#ifdef MS_SODAQUBEER410M_DEBUG_DEEP
+#include <StreamDebugger.h>
+#endif
+
+/** @ingroup modem_ubee_ltem */
+/**@{*/
+
+/**
+ * @anchor modem_ubee_ltem_pins_timing
+ * @name Modem Pin Settings and Timing
+ * The timing and pin level settings for a Sodaq     UBee R410M
+ */
+/**@{*/
 /**
  * @brief The loggerModem::_statusLevel.
  *
@@ -196,17 +212,7 @@
  * low.  We allow up to 15 seconds for shutdown in case it is not monitored.
  */
 #define R410M_DISCONNECT_TIME_MS 15000L
-
-// Included Dependencies
-#include "ModSensorDebugger.h"
-#undef MS_DEBUGGING_STD
-#include "TinyGsmClient.h"
-#include "LoggerModem.h"
-
-#ifdef MS_SODAQUBEER410M_DEBUG_DEEP
-#include <StreamDebugger.h>
-#endif
-
+/**@}*/
 
 /**
  * @brief The loggerModem subclass for the
@@ -302,8 +308,8 @@ class SodaqUBeeR410M : public loggerModem {
     uint32_t getNISTTime(void) override;
 
     bool  getModemSignalQuality(int16_t& rssi, int16_t& percent) override;
-    bool  getModemBatteryStats(uint8_t& chargeState, int8_t& percent,
-                               uint16_t& milliVolts) override;
+    bool  getModemBatteryStats(int8_t& chargeState, int8_t& percent,
+                               int16_t& milliVolts) override;
     float getModemChipTemperature(void) override;
 
     bool modemHardReset(void) override;
@@ -337,7 +343,7 @@ class SodaqUBeeR410M : public loggerModem {
     bool isModemAwake(void) override;
 
  private:
-    const char* _apn;
+    const char* _apn;  ///< Internal reference to the cellular APN
 };
 /**@}*/
 #endif  // SRC_MODEMS_SODAQUBEER410M_H_

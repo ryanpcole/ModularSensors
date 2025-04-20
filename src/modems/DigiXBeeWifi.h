@@ -1,7 +1,8 @@
 /**
  * @file DigiXBeeWifi.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the DigiXBeeWifi subclass of the DigiXBee class for Digi S6B
@@ -50,8 +51,9 @@
 #define MS_DEBUGGING_STD "DigiXBeeWifi"
 #endif
 
-/** @ingroup modem_digi_wifi */
-/**@{*/
+#ifdef MS_DIGIXBEEWIFI_DEBUG_DEEP
+#define MS_DEBUGGING_DEEP "DigiXBeeWifi"
+#endif
 
 /**
  * @brief The modem type for the underlying TinyGSM library.
@@ -74,6 +76,22 @@
 #ifdef MS_DIGIXBEEWIFI_DEBUG_DEEP
 #include <StreamDebugger.h>
 #endif
+
+/** @ingroup modem_digi_wifi */
+/**@{*/
+
+/**
+ * @anchor modem_digi_wifi_config
+ * @name Configuration Defines
+ * Defines to configure if and when to reset the WiFi XBee
+ */
+/**@{*/
+/**
+ * @brief This causes the WiFi XBee to reset after this number of transmission
+ * attempts
+ */
+#define XBEE_RESET_THRESHOLD 4
+/**@}*/
 
 /**
  * @brief The class for the [Digi XBee](@ref modem_digi)
@@ -105,10 +123,15 @@ class DigiXBeeWifi : public DigiXBee {
      * reference.
      * @param ssid The wifi network ID.
      * @param pwd The wifi network password, assuming WPA2.
+     * @param maintainAssociation Whether to maintain association with the
+     * access point during sleep. Maitaining the association during sleep draws
+     * more current (+10mA?), but also allows a faster reconnection on the next
+     * wake.
      */
     DigiXBeeWifi(Stream* modemStream, int8_t powerPin, int8_t statusPin,
                  bool useCTSStatus, int8_t modemResetPin,
-                 int8_t modemSleepRqPin, const char* ssid, const char* pwd);
+                 int8_t modemSleepRqPin, const char* ssid, const char* pwd,
+                 bool maintainAssociation = false);
     /**
      * @brief Destroy the Digi XBee Wifi object - no action taken
      */
@@ -122,8 +145,8 @@ class DigiXBeeWifi : public DigiXBee {
     uint32_t getNISTTime(void) override;
 
     bool  getModemSignalQuality(int16_t& rssi, int16_t& percent) override;
-    bool  getModemBatteryStats(uint8_t& chargeState, int8_t& percent,
-                               uint16_t& milliVolts) override;
+    bool  getModemBatteryStats(int8_t& chargeState, int8_t& percent,
+                               int16_t& milliVolts) override;
     float getModemChipTemperature(void) override;
 
     bool updateModemMetadata(void) override;
@@ -150,14 +173,27 @@ class DigiXBeeWifi : public DigiXBee {
      * bypass), enables pin sleep, sets the DIO pins to the expected functions,
      * and reboots the modem to ensure all settings are applied.
      *
-     * @return **bool** True if the extra setup succeeded.
+     * @return True if the extra setup succeeded.
      */
     bool extraModemSetup(void) override;
     bool isModemAwake(void) override;
 
  private:
-    const char* _ssid;
-    const char* _pwd;
+
+    const char* _ssid;  ///< Internal reference to the WiFi SSID
+    const char* _pwd;   ///< Internal reference to the WiFi password
+    /**
+     * @brief True to maintain association with the WiFi network while in sleep
+     * mode.
+     */
+    bool _maintainAssociation;
+
+    /**
+     * @brief The number of times the XBee has failed to update metadata.
+     *
+     * If this is larger than #XBEE_RESET_THRESHOLD the XBee will be reset.
+     */
+    uint16_t metadata_failure_count = 0;
 };
 /**@}*/
 #endif  // SRC_MODEMS_DIGIXBEEWIFI_H_

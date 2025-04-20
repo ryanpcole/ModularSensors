@@ -1,7 +1,8 @@
 /**
  * @file KellerAcculevel.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Written By: Anthony Aufdenkampe <aaufdenkampe@limno.com>
  * Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
@@ -53,7 +54,6 @@
 // Included Dependencies
 #include "sensors/KellerParent.h"
 
-// Sensor Specific Defines
 /** @ingroup sensor_acculevel */
 /**@{*/
 
@@ -176,7 +176,9 @@ class KellerAcculevel : public KellerParent {
               measurementsToAverage, Acculevel_kellerModel, "KellerAcculevel",
               KELLER_NUM_VARIABLES, ACCULEVEL_WARM_UP_TIME_MS,
               ACCULEVEL_STABILIZATION_TIME_MS, ACCULEVEL_MEASUREMENT_TIME_MS) {}
-    // Destructor
+    /**
+     * @brief Destroy the Keller Acculevel object
+     */
     ~KellerAcculevel() {}
 };
 

@@ -1,7 +1,8 @@
 /**
  * @file LoggerModemMacros.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains PRE-ROCESSOR MACROS for use with logger modems.
@@ -100,13 +101,14 @@
  */
 #define MS_MODEM_WAKE(specificModem)                                           \
     bool specificModem::modemWake(void) {                                      \
-        /* Power up */                                                         \
-        if (_millisPowerOn == 0) { modemPowerUp(); }                           \
-                                                                               \
         /** Set-up pin modes.                                                  \
           Because the modem calls wake BEFORE the first setup, we must set     \
           the pin modes in the wake function. */                               \
         setModemPinModes();                                                    \
+                                                                               \
+        /* Power up */                                                         \
+        if (_millisPowerOn == 0) { modemPowerUp(); }                           \
+                                                                               \
         if (millis() - _millisPowerOn < _wakeDelayTime_ms) {                   \
             MS_DBG(F("Wait"), _wakeDelayTime_ms - (millis() - _millisPowerOn), \
                    F("ms longer for warm-up"));                                \
@@ -177,7 +179,7 @@
         return success;                                                        \
     }
 
-#if defined TINY_GSM_MODEM_HAS_GPRS
+#if defined(TINY_GSM_MODEM_HAS_GPRS)
 /**
  * @brief Creates an isInternetAvailable() function for a specific modem
  * subclass.
@@ -319,7 +321,7 @@
                MS_PRINT_DEBUG_TIMER, F("milliseconds."));     \
     }
 
-#else  // from #if defined TINY_GSM_MODEM_HAS_GPRS (ie, this is wifi)
+#else  // from #if defined(TINY_GSM_MODEM_HAS_GPRS) (ie, this is wifi)
 
 /**
  * @brief Creates an isInternetAvailable() function for a specific
@@ -358,12 +360,18 @@
  * wait for network registration, then provide the access point name, and then
  * establish a GPRS/EPS connection.
  *
+ * @note WiFi modems can frequently reconnect with saved credentials instead of
+ * sending new credentials each time.  This function waits for an automatic
+ * connection to be made, if possible.
+ *
  * @param specificModem The modem subclass
+ * @param auto_reconnect_time The amount of time, in milliseconds, to allow the
+ * modem to attempt to connect automatically from saved credentials.
  *
  * @return The text of a connectInternet(uint32_t maxConnectionTime) function
  * specific to a single modem subclass.
  */
-#define MS_MODEM_CONNECT_INTERNET(specificModem)                             \
+#define MS_MODEM_CONNECT_INTERNET(specificModem, auto_reconnect_time)        \
     bool specificModem::connectInternet(uint32_t maxConnectionTime) {        \
         bool success = true;                                                 \
                                                                              \
@@ -387,24 +395,32 @@
             MS_DBG(F("Modem was already awake and should be ready."));       \
         }                                                                    \
                                                                              \
+        /** Wait to see if a connection was made automatically from saved    \
+         * credentials */                                                    \
         if (success) {                                                       \
             MS_START_DEBUG_TIMER                                             \
-            MS_DBG(F("\nAttempting to connect to WiFi network..."));         \
+            MS_DBG(F("\nWaiting"), auto_reconnect_time,                      \
+                   F("ms to see if WiFi connects without sending new "       \
+                     "credentials..."));                                     \
             if (!(gsmModem.isNetworkConnected())) {                          \
-                MS_DBG(F("Sending credentials..."));                         \
-                for (uint8_t i = 0; i < 5; i++) {                            \
-                    if (gsmModem.networkConnect(_ssid, _pwd)) { break; }     \
-                }                                                            \
-                MS_DBG(F("Waiting up to"), maxConnectionTime / 1000,         \
-                       F("seconds for connection"));                         \
-                if (!gsmModem.waitForNetwork(maxConnectionTime)) {           \
-                    MS_DBG(F("... WiFi connection failed"));                 \
-                    return false;                                            \
+                /** If still not connected, send new credentials */          \
+                if (!(gsmModem.waitForNetwork(auto_reconnect_time))) {       \
+                    MS_DBG(F("Sending credentials..."));                     \
+                    for (uint8_t i = 0; i < 5; i++) {                        \
+                        if (gsmModem.networkConnect(_ssid, _pwd)) { break; } \
+                    }                                                        \
+                    MS_DBG(F("Waiting up to"), maxConnectionTime / 1000,     \
+                           F("seconds for connection"));                     \
+                    if (!gsmModem.waitForNetwork(maxConnectionTime)) {       \
+                        MS_DBG(F("... WiFi connection failed"));             \
+                        return false;                                        \
+                    }                                                        \
                 }                                                            \
             }                                                                \
             MS_DBG(F("... WiFi connected after"), MS_PRINT_DEBUG_TIMER,      \
                    F("milliseconds!"));                                      \
         }                                                                    \
+                                                                             \
         if (!wasPowered) {                                                   \
             MS_DBG(F("Modem was powered to connect to the internet!  "       \
                      "Remember to turn it off when you're done."));          \
@@ -436,8 +452,23 @@
         MS_DBG(F("Disconnected from WiFi network after"), \
                MS_PRINT_DEBUG_TIMER, F("milliseconds.")); \
     }
-#endif  // #if defined TINY_GSM_MODEM_HAS_GPRS
+#endif  // #if defined(TINY_GSM_MODEM_HAS_GPRS)
 
+/**
+ * @brief The port hosting the NIST "time" protocol (37)
+ */
+#define TIME_PROTOCOL_PORT 37
+/**
+ * @brief The size of the NIST response from the "time" protocol, in bytes.
+ */
+#define NIST_RESPONSE_BYTES 4
+
+#if !defined(NIST_SERVER_RETRYS) || defined(DOXYGEN)
+/**
+ * @brief The number of retry attempts when connecting to the NIST server.
+ */
+#define NIST_SERVER_RETRYS 12
+#endif  // NIST_SERVER_RETRYS
 
 /**
  * @brief Creates a getNISTTime() function for a specific modem subclass.
@@ -473,21 +504,24 @@
                                                                               \
             /** Make TCP connection. */                                       \
             MS_DBG(F("\nConnecting to NIST daytime Server"));                 \
-            bool connectionMade = gsmClient.connect("time.nist.gov", 37, 15); \
+            bool connectionMade = gsmClient.connect("time.nist.gov",          \
+                                                    TIME_PROTOCOL_PORT, 15);  \
                                                                               \
             /** Wait up to 5 seconds for a response. */                       \
             if (connectionMade) {                                             \
                 uint32_t start = millis();                                    \
-                while (gsmClient && gsmClient.available() < 4 &&              \
+                while (gsmClient &&                                           \
+                       gsmClient.available() < NIST_SERVER_RETRYS &&          \
                        millis() - start < 5000L) {}                           \
                                                                               \
-                if (gsmClient.available() >= 4) {                             \
+                if (gsmClient.available() >= NIST_RESPONSE_BYTES) {           \
                     MS_DBG(F("NIST responded after"), millis() - start,       \
                            F("ms"));                                          \
-                    byte response[4] = {0};                                   \
-                    gsmClient.read(response, 4);                              \
+                    byte response[NIST_RESPONSE_BYTES] = {0};                 \
+                    gsmClient.read(response, NIST_RESPONSE_BYTES);            \
                     if (gsmClient.connected()) gsmClient.stop();              \
-                    return parseNISTBytes(response);                          \
+                    uint32_t nistParsed = parseNISTBytes(response);           \
+                    if (nistParsed != 0) { return parseNISTBytes(response); } \
                 } else {                                                      \
                     MS_DBG(F("NIST Time server did not respond!"));           \
                     if (gsmClient.connected()) gsmClient.stop();              \
@@ -575,11 +609,11 @@
 
 #ifdef TINY_GSM_MODEM_HAS_BATTERY
 /**
- * @brief Creates a getModemBatteryStats(uint8_t& chargeState, int8_t& percent,
- * uint16_t& milliVolts) function for a specific modem subclass.
+ * @brief Creates a getModemBatteryStats(int8_t& chargeState, int8_t& percent,
+ * int16_t& milliVolts) function for a specific modem subclass.
  *
  * This is a passthrough to the specific modem's getBattStats(uint8_t&
- * chargeState, int8_t& percent, uint16_t& milliVolts) for modems where such
+ * chargeState, int8_t& percent, int16_t& milliVolts) for modems where such
  * data is available.
  *
  * This populates the entered references with -9999s for modems where such data
@@ -587,24 +621,24 @@
  *
  * @param specificModem The modem subclass
  *
- * @return The text of a getModemBatteryStats(uint8_t& chargeState, int8_t&
- * percent, uint16_t& milliVolts) function specific to a single modem subclass.
+ * @return The text of a getModemBatteryStats(int8_t& chargeState, int8_t&
+ * percent, int16_t& milliVolts) function specific to a single modem subclass.
  *
  */
 #define MS_MODEM_GET_MODEM_BATTERY_DATA(specificModem)                  \
     bool specificModem::getModemBatteryStats(                           \
-        uint8_t& chargeState, int8_t& percent, uint16_t& milliVolts) {  \
+        int8_t& chargeState, int8_t& percent, int16_t& milliVolts) {    \
         MS_DBG(F("Getting modem battery data:"));                       \
         return gsmModem.getBattStats(chargeState, percent, milliVolts); \
     }
 
 #else
 /**
- * @brief Creates a getModemBatteryStats(uint8_t& chargeState, int8_t& percent,
- * uint16_t& milliVolts) function for a specific modem subclass.
+ * @brief Creates a getModemBatteryStats(int8_t& chargeState, int8_t& percent,
+ * int16_t& milliVolts) function for a specific modem subclass.
  *
  * This is a passthrough to the specific modem's getBattStats(uint8_t&
- * chargeState, int8_t& percent, uint16_t& milliVolts) for modems where such
+ * chargeState, int8_t& percent, int16_t& milliVolts) for modems where such
  * data is available.
  *
  * This populates the entered references with -9999s for modems where such data
@@ -612,18 +646,18 @@
  *
  * @param specificModem The modem subclass
  *
- * @return The text of a getModemBatteryStats(uint8_t& chargeState, int8_t&
- * percent, uint16_t& milliVolts) function specific to a single modem subclass.
+ * @return The text of a getModemBatteryStats(int8_t& chargeState, int8_t&
+ * percent, int16_t& milliVolts) function specific to a single modem subclass.
  *
  */
-#define MS_MODEM_GET_MODEM_BATTERY_DATA(specificModem)                 \
-    bool specificModem::getModemBatteryStats(                          \
-        uint8_t& chargeState, int8_t& percent, uint16_t& milliVolts) { \
-        MS_DBG(F("This modem doesn't return battery information!"));   \
-        chargeState = 99;                                              \
-        percent     = -99;                                             \
-        milliVolts  = 9999;                                            \
-        return false;                                                  \
+#define MS_MODEM_GET_MODEM_BATTERY_DATA(specificModem)               \
+    bool specificModem::getModemBatteryStats(                        \
+        int8_t& chargeState, int8_t& percent, int16_t& milliVolts) { \
+        MS_DBG(F("This modem doesn't return battery information!")); \
+        chargeState = 99;                                            \
+        percent     = -99;                                           \
+        milliVolts  = 9999;                                          \
+        return false;                                                \
     }
 #endif
 

@@ -1,7 +1,8 @@
 /**
  * @file SIMComSIM7080.cpp
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Implements the SIMComSIM7080 class.
@@ -33,7 +34,35 @@ SIMComSIM7080::SIMComSIM7080(Stream* modemStream, int8_t powerPin,
 // Destructor
 SIMComSIM7080::~SIMComSIM7080() {}
 
-MS_MODEM_EXTRA_SETUP(SIMComSIM7080);
+bool SIMComSIM7080::extraModemSetup(void) {
+    bool success = gsmModem.init();
+    gsmClient.init(&gsmModem);
+    _modemName = gsmModem.getModemName();
+
+    // The modem is liable to crash if the send buffer overflows and TinyGSM
+    // offers no way to know when that might happen. Reduce the chance of
+    // problems by maxing out the send buffer size. This size should accommodate
+    // a completely full 8K LogBuffer and a crappy connection.
+    gsmModem.sendAT(F("+CACFG=\"SNDBUF\",29200"));
+    gsmModem.waitResponse();
+
+    // Enable the netlight indicator
+    gsmModem.sendAT(F("+CNETLIGHT=1"));
+    gsmModem.waitResponse();
+    // Enable netlight indication of GPRS status
+    // Enable, the netlight will be forced to enter into 64ms on/300ms off
+    // blinking state in GPRS data transmission service.Otherwise,  the netlight
+    // state is not restricted.
+    gsmModem.sendAT(F("+CNETLIGHT=1"));
+    gsmModem.waitResponse();
+
+    // Enable the battery check functionality
+    gsmModem.sendAT(F("+CBATCHK=1"));
+    gsmModem.waitResponse();
+
+    return success;
+}
+
 MS_IS_MODEM_AWAKE(SIMComSIM7080);
 MS_MODEM_WAKE(SIMComSIM7080);
 
@@ -58,7 +87,18 @@ bool SIMComSIM7080::modemWakeFxn(void) {
         digitalWrite(_modemSleepRqPin, _wakeLevel);
         delay(_wakePulse_ms);  // >1s
         digitalWrite(_modemSleepRqPin, !_wakeLevel);
-        return gsmModem.waitResponse(30000L, GF("SMS Ready")) == 1;
+        int ready_response = gsmModem.waitResponse(30000L, GF("SMS Ready"),
+                                                   GF("+CPIN: NOT INSERTED"));
+        if (ready_response == 1) {
+            MS_DBG(F("Got SMS Ready indicating modem is awake and ready"));
+        } else if (ready_response == 2) {
+            MS_DBG(F("Got +CPIN: NOT INSERTED indicating modem is awake and "
+                     "ready but has no SIM card"));
+        } else {
+            MS_DBG(F("Didn't get expected finish URC for modem wake!"));
+        }
+
+        return ready_response == 1 || ready_response == 2;
     }
     return true;
 }

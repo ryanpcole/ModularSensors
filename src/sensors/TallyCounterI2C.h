@@ -1,7 +1,8 @@
 /**
  * @file TallyCounterI2C.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Anthony Aufdenkampe <aaufdenkampe@limno.com>
  * Edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
@@ -88,11 +89,27 @@
 /** @ingroup sensor_tally */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_tally_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the Tally event counter
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the Tally can report 1 value.
 #define TALLY_NUM_VARIABLES 1
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define TALLY_INC_CALC_VARIABLES 0
+/**@}*/
+
+/**
+ * @anchor sensor_tally_config
+ * @name Configuration Defines
+ * Defines to set the address of the Tally event counter.
+ */
+/**@{*/
+/// @brief The default address of the Tally
+#define TALLY_ADDRESS_BASE 0x33
+/**@}*/
 
 /**
  * @anchor sensor_tally_timing
@@ -138,9 +155,6 @@
 /// @brief Default variable short code; "TallyCounterI2CEvents"
 #define TALLY_EVENTS_DEFAULT_CODE "TallyCounterI2CEvents"
 /**@}*/
-
-/// @brief The default address of the Tally
-#define TALLY_ADDRESS_BASE 0x33
 
 /* clang-format off */
 /**
@@ -192,7 +206,7 @@ class TallyCounterI2C : public Sensor {
      * #_sensorStatus. It also engages sleep mode on the Tally counter and
      * clears the counter memory. The Tally must be powered for setup.
      *
-     * @return **bool** True if the setup was successful.
+     * @return True if the setup was successful.
      */
     bool setup(void) override;
     /**

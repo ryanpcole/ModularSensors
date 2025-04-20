@@ -1,7 +1,8 @@
 /**
  * @file MeaSpecMS5803.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Anthony Aufdenkampe <aaufdenkampe@limno.com> with help from Beth
  * Fisher, Evan Host and Bobby Schulz.
  * Heavliy edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
@@ -94,11 +95,17 @@
 /** @ingroup sensor_ms5803 */
 /**@{*/
 
-// Sensor Specific Defines
+/**
+ * @anchor sensor_ms5803_var_counts
+ * @name Sensor Variable Counts
+ * The number of variables that can be returned by the MS5803
+ */
+/**@{*/
 /// @brief Sensor::_numReturnedValues; the MS5803 can report 2 values.
 #define MS5803_NUM_VARIABLES 2
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define MS5803_INC_CALC_VARIABLES 0
+/**@}*/
 
 /**
  * @anchor sensor_ms5803_timing
@@ -233,7 +240,7 @@ class MeaSpecMS5803 : public Sensor {
      * return anything to indicate failure or success, we just have to hope it
      * succeeded.
      *
-     * @return **bool** True if the setup was successful.
+     * @return True if the setup was successful.
      */
     bool setup(void) override;
     /**

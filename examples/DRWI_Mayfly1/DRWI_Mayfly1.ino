@@ -1,5 +1,9 @@
 /** =========================================================================
- * @file DRWI_Mayfly1.ino
+ * @example{lineno} DRWI_Mayfly1.ino
+ * @copyright Stroud Water Research Center
+ * @license This example is published under the BSD-3 license.
+ * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ *
  * @brief Example for DRWI CitSci LTE sites.
  *
  * This example shows proper settings for the following configuration:
@@ -8,16 +12,10 @@
  * EnviroDIY SIM7080 LTE module (with Hologram SIM card)
  * Hydros21 CTD sensor
  *
- * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @copyright (c) 2017-2022 Stroud Water Research Center (SWRC)
- *                          and the EnviroDIY Development Team
- *            This example is published under the BSD-3 license.
+ * See [the walkthrough page](@ref example_drwi_mayfly1) for detailed
+ * instructions.
  *
-
- * Hardware Platform: EnviroDIY Mayfly Arduino Datalogger
- *
- * DISCLAIMER:
- * THIS CODE IS PROVIDED "AS IS" - NO WARRANTY IS GIVEN.
+ * @m_examplenavigation{example_drwi_mayfly1,}
  * ======================================================================= */
 
 // ==========================================================================
@@ -38,10 +36,6 @@
 /** Start [includes] */
 // The Arduino library is needed for every Arduino program.
 #include <Arduino.h>
-
-// EnableInterrupt is used by ModularSensors for external and pin change
-// interrupts and must be explicitly included in the main program.
-#include <EnableInterrupt.h>
 
 // Include the main header for ModularSensors
 #include <ModularSensors.h>

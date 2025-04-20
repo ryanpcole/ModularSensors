@@ -1,17 +1,15 @@
 /** =========================================================================
- * @file data_saving.ino
+ * @example{lineno} data_saving.ino
+ * @copyright Stroud Water Research Center
+ * @license This example is published under the BSD-3 license.
+ * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ *
  * @brief Example publishing only a portion of the logged variables.
  *
- * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
- * @copyright (c) 2017-2022 Stroud Water Research Center (SWRC)
- *                          and the EnviroDIY Development Team
- *            This example is published under the BSD-3 license.
+ * See [the walkthrough page](@ref example_data_saving) for detailed
+ * instructions.
  *
- * Build Environment: Visual Studios Code with PlatformIO
- * Hardware Platform: EnviroDIY Mayfly Arduino Datalogger
- *
- * DISCLAIMER:
- * THIS CODE IS PROVIDED "AS IS" - NO WARRANTY IS GIVEN.
+ * @m_examplenavigation{example_data_saving,}
  * ======================================================================= */
 
 // ==========================================================================
@@ -34,10 +32,6 @@
 // The Arduino library is needed for every Arduino program.
 #include <Arduino.h>
 
-// EnableInterrupt is used by ModularSensors for external and pin change
-// interrupts and must be explicitly included in the main program.
-#include <EnableInterrupt.h>
-
 // Include the main header for ModularSensors
 #include <ModularSensors.h>
 /** End [includes] */
@@ -53,7 +47,7 @@
 // peripherals as possible.  In some cases (ie, modbus communication) many
 // sensors can share the same serial port.
 
-#if not defined ARDUINO_ARCH_SAMD && not defined ATMEGA2560  // For AVR boards
+#if !defined(ARDUINO_ARCH_SAMD) && !defined(ATMEGA2560)  // For AVR boards
 // Unfortunately, most AVR boards have only one or two hardware serial ports,
 // so we'll set up three types of extra software serial ports to use
 
@@ -67,7 +61,7 @@ AltSoftSerial altSoftSerial;
 #endif  // End software serial for avr boards
 
 
-#if defined ARDUINO_ARCH_SAMD
+#if defined(ARDUINO_ARCH_SAMD)
 #include <wiring_private.h>  // Needed for SAMD pinPeripheral() function
 
 #ifndef ENABLE_SERIAL2
@@ -401,7 +395,7 @@ void setup() {
 // Wait for USB connection to be established by PC
 // NOTE:  Only use this when debugging - if not connected to a PC, this
 // could prevent the script from starting
-#if defined SERIAL_PORT_USBVIRTUAL
+#if defined(SERIAL_PORT_USBVIRTUAL)
     while (!SERIAL_PORT_USBVIRTUAL && (millis() < 10000)) {
         // wait
     }
@@ -429,7 +423,7 @@ void setup() {
 
 // Assign pins SERCOM functionality for SAMD boards
 // NOTE:  This must happen *after* the various serial.begin statements
-#if defined ARDUINO_ARCH_SAMD
+#if defined(ARDUINO_ARCH_SAMD)
 #ifndef ENABLE_SERIAL2
     pinPeripheral(10, PIO_SERCOM);  // Serial2 Tx/Dout = SERCOM1 Pad #2
     pinPeripheral(11, PIO_SERCOM);  // Serial2 Rx/Din = SERCOM1 Pad #0
@@ -550,7 +544,7 @@ void loop() {
         // we will explicitly start and end the serial connection in the loop.
         modbusSerial.end();
 
-#if defined AltSoftSerial_h
+#if defined(AltSoftSerial_h)
         // Explicitly set the pin modes for the AltSoftSerial pins to make sure
         // they're low
         pinMode(5, OUTPUT);  // On a Mayfly, pin D5 is the AltSoftSerial Tx pin
@@ -559,7 +553,7 @@ void loop() {
         digitalWrite(6, LOW);
 #endif
 
-#if defined ARDUINO_SAMD_ZERO
+#if defined(ARDUINO_SAMD_ZERO)
         digitalWrite(10, LOW);
         digitalWrite(11, LOW);
 #endif

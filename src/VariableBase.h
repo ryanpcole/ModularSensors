@@ -1,7 +1,8 @@
 /**
  * @file VariableBase.h
- * @copyright 2017-2022 Stroud Water Research Center
- * Part of the EnviroDIY ModularSensors library for Arduino
+ * @copyright Stroud Water Research Center
+ * Part of the EnviroDIY ModularSensors library for Arduino.
+ * This library is published under the BSD-3 license.
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the Variable class.
@@ -149,7 +150,7 @@ class Variable {
      * Supercedes any value supplied in the constructor.
      * @param customVarCode A custom code for the variable.  Supercedes
      * any value supplied in the constructor.
-     * @return Variable A pointer to the variable object
+     * @return A pointer to the variable object
      */
     Variable* begin(Sensor* parentSense, const char* uuid,
                     const char* customVarCode);
@@ -160,7 +161,7 @@ class Variable {
      * Sensor supplied in the constructor.
      * @param uuid A universally unique identifier for the variable.
      * Supercedes any value supplied in the constructor.
-     * @return Variable A pointer to the variable object
+     * @return A pointer to the variable object
      */
     Variable* begin(Sensor* parentSense, const char* uuid);
     /**
@@ -168,7 +169,7 @@ class Variable {
      *
      * @param parentSense The Sensor object supplying values.  Supercedes any
      * Sensor supplied in the constructor.
-     * @return Variable A pointer to the variable object
+     * @return A pointer to the variable object
      */
     Variable* begin(Sensor* parentSense);
 
@@ -187,7 +188,7 @@ class Variable {
      * supplied in the constructor.
      * @param uuid A universally unique identifier for the variable.
      * Supercedes any value supplied in the constructor.
-     * @return Variable A pointer to the variable object
+     * @return A pointer to the variable object
      */
     Variable* begin(float (*calcFxn)(), uint8_t decimalResolution,
                     const char* varName, const char* varUnit,
@@ -205,7 +206,7 @@ class Variable {
      * vocabulary.  Supercedes any value supplied in the constructor.
      * @param varCode A custom code for the variable.  Supercedes any value
      * supplied in the constructor.
-     * @return Variable A pointer to the variable object
+     * @return A pointer to the variable object
      */
     Variable* begin(float (*calcFxn)(), uint8_t decimalResolution,
                     const char* varName, const char* varUnit,
@@ -238,7 +239,7 @@ class Variable {
      *
      * This is a helper needed for dealing with variables in arrays
      *
-     * @return **String** The parent sensor name
+     * @return The parent sensor name
      */
     String getParentSensorName(void);
     /**
@@ -246,7 +247,7 @@ class Variable {
      *
      * This is a helper needed for dealing with variables in arrays
      *
-     * @return **String** The parent sensor's concatentated name and location.
+     * @return The parent sensor's concatentated name and location.
      */
     String getParentSensorNameAndLocation(void);
 
@@ -261,7 +262,7 @@ class Variable {
     /**
      * @brief Get the variable's resolution - in decimal places
      *
-     * @return **uint8_t** the variable resolution
+     * @return the variable resolution
      */
     uint8_t getResolution(void);
     /**
@@ -273,7 +274,7 @@ class Variable {
     /**
      * @brief Get the variable name
      *
-     * @return **String** The variable name
+     * @return The variable name
      */
     String getVarName(void);
     /**
@@ -289,7 +290,7 @@ class Variable {
     /**
      * @brief Get the variable unit
      *
-     * @return **String** The variable unit
+     * @return The variable unit
      */
     String getVarUnit(void);
     /**
@@ -305,7 +306,7 @@ class Variable {
     /**
      * @brief Get the customized code for the variable
      *
-     * @return **String** The customized code for the variable
+     * @return The customized code for the variable
      */
     String getVarCode(void);
     /**
@@ -319,7 +320,7 @@ class Variable {
     /**
      * @brief Get the customized code for the variable
      *
-     * @return **String** The customized code for the variable
+     * @return The customized code for the variable
      */
     String getVarUUID(void);
     /**
@@ -331,7 +332,7 @@ class Variable {
     /**
      * @brief Verify the the UUID is correctly formatted
      *
-     * @return **bool** True if the UUID is correctly formatted.
+     * @return True if the UUID is correctly formatted.
      *
      * @note This only checks the _format_ of the UUID.  It does not in any way
      * indicate that the value of the UUID is correct.
@@ -343,7 +344,7 @@ class Variable {
      *
      * @param updateValue True to ask the parent sensor to measure and return a
      * new value.  Default is false.
-     * @return **float** The current value of the variable
+     * @return The current value of the variable
      */
     float getValue(bool updateValue = false);
     /**
@@ -352,9 +353,17 @@ class Variable {
      *
      * @param updateValue True to ask the parent sensor to measure and return a
      * new value.  Default is false.
-     * @return **String** The current value of the variable
+     * @return The current value of the variable
      */
     String getValueString(bool updateValue = false);
+    /**
+     * @brief Get a particular value of the variable as a string with the
+     * correct decimal resolution
+     *
+     * @param value value to format
+     * @return The formatted value of the variable
+     */
+    String formatValueString(float value);
 
     /**
      * @brief Pointer to the parent sensor
@@ -376,15 +385,41 @@ class Variable {
 
 
  private:
+    /**
+     * @brief Private reference to function used to calculate the variables
+     * value.
+     */
     float (*_calcFxn)(void) = nullptr;
 
-    const uint8_t _sensorVarNum      = 0;
-    uint8_t       _decimalResolution = 0;
 
+    /**
+     * @brief The position in the sensor's value array of this variable's value.
+     */
+    const uint8_t _sensorVarNum = 0;
+    /**
+     * @brief The resolution (in decimal places) of the value.
+     */
+    uint8_t _decimalResolution = 0;
+
+    /**
+     * @brief The name of the variable per the [ODM2 variable name controlled
+     * vocabulary](http://vocabulary.odm2.org/variablename/)
+     */
     const char* _varName = nullptr;
+    /**
+     * @brief The unit of the variable per the [ODM2 unit controlled
+     * vocabulary](http://vocabulary.odm2.org/units/)
+     */
     const char* _varUnit = nullptr;
+    /**
+     * @brief A custom code for the variable.  This can be any short text
+     * helping to identify the variable in files.
+     */
     const char* _varCode = nullptr;
-    const char* _uuid    = nullptr;
+    /**
+     * @brief A universally unique identifier for the variable.
+     */
+    const char* _uuid = nullptr;
 };
 
 #endif  // SRC_VARIABLEBASE_H_
