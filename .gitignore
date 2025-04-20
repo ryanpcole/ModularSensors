@@ -6,6 +6,9 @@ ehthumbs.db
 # Folder config file
 Desktop.ini
 
+# ignore the secrets file
+arduino_secrets.h
+
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
