@@ -242,7 +242,7 @@ Logger dataLogger(LoggerID, loggingInterval, &varArray);
 // ==========================================================================
 // Creating a generic mqtt publisher 
 const char* MQTTtopic =
-    "topic";  // Your MQTT password
+    "debugtopic";  // Your MQTT password
 
 // Create a data publisher for ThingSpeak
 #include <mqttPublisher.h>

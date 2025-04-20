@@ -144,26 +144,24 @@ int16_t mqttPublisher::publishData(Client* outClient) {
     MS_DBG(numChannels, F("fields will be sent via MQTT"));
 
     // Create a buffer for the portions of the request and response
-    char tempBuffer[26] = "";
+    //char tempBuffer[26] = "";
 
-/*
-    char topicBuffer[42] = ;
+    const char* topicBuffer = mqttTopic;
     MS_DBG(F("Topic ["), strlen(topicBuffer), F("]:"), String(topicBuffer));
-*/
 
     // buffer is used only locally, it does not transmit
     txBufferInit(nullptr);
-
-    txBufferAppend("created_at=");
     txBufferAppend(
         Logger::formatDateTime_ISO8601(Logger::markedLocalEpochTime).c_str());
+    txBufferAppend(" ");
 
     for (uint8_t i = 0; i < numChannels; i++) {
-        txBufferAppend("&field");
-        itoa(i + 1, tempBuffer, 10);  // BASE 10
-        txBufferAppend(tempBuffer);
+        txBufferAppend(_baseLogger->getVarCodeAtI(i).c_str());
+//        itoa(i + 1, tempBuffer, 10);  // BASE 10
+//        txBufferAppend(tempBuffer);
         txBufferAppend('=');
-        txBufferAppend(_baseLogger->getValueStringAtI(i).c_str());
+        txBufferAppend(_baseLogger->getValueStringAtI(i).c_str()),
+        txBufferAppend(" ");
     }
     MS_DBG(F("Message ["), strlen(txBuffer), F("]:"), String(txBuffer));
 
