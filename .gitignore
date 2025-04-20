@@ -3,6 +3,12 @@ Thumbs.db
 ehthumbs.db
 ~*
 
+# Dev folder
+#dev
+
+# Secrets
+arduino_secrets.h
+
 # Folder config file
 Desktop.ini
 
