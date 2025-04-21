@@ -54,9 +54,9 @@
 // ==========================================================================
 /** Start [logging_options] */
 // The name of this program file
-const char* sketchName = "CS500_mqtt.ino";
+const char* sketchName = "garden-met-deploy.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
-const char* LoggerID = "home_met";
+const char* LoggerID = "garden_met";
 // How frequently (in minutes) to log data
 const uint8_t loggingInterval = 1;
 // Your logger's timezone.
@@ -158,7 +158,7 @@ SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
 //  Campbell CS500 Temp and RH sensor
 // ==========================================================================
 /** Start [campbell_cs500] */
-#include <CS500tempRH.h>
+#include <sensors/CS500tempRH.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t  CS500Power          = sensorPowerPin;  // Power pin
@@ -178,7 +178,7 @@ CS500tempRH cs500(CS500Power,
 //  METER TEROS12 SDI-12 Soil VWC, Temp, EC Sensor
 // ==========================================================================
 /** Start [meter_teros12] */
-#include <MeterTeros12.h>
+#include <sensors/MeterTeros12.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const char*   teros12SDI12address = "1";  // The SDI-12 Address of the Teros 12 - Need to set this manually for each sensor
@@ -218,7 +218,7 @@ Variable* variableList[] = {
     new MeterTeros12_VWC(&teros12),
     new MeterTeros12_Temp(&teros12),
     new MeterTeros12_Ea(&teros12),
-    new MeterTeros12_ECbulk(&teros12)
+    new MeterTeros12_ECbulk(&teros12),
     new ProcessorStats_Battery(&mcuBoard),       // Battery voltage (EnviroDIY_Mayfly_Batt)
     new Modem_SignalPercent(&modem),             // Percent full scale (EnviroDIY_LTEB_SignalPercent)
 };
@@ -282,10 +282,10 @@ Logger dataLogger(LoggerID, loggingInterval, &varArray);
 // ==========================================================================
 // Creating a generic mqtt publisher 
 const char* MQTTtopic =
-    "debugtopic";  // Your MQTT password
+    "gardenmet";  // Your MQTT password
 
 // Create a data publisher for ThingSpeak
-#include <mqttPublisher.h>
+#include <publishers/mqttPublisher.h>
 mqttPublisher Mqtt;
 /** End [loggers] */
 
