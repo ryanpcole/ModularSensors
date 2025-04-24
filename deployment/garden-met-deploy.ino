@@ -143,6 +143,7 @@ MaximDS3231 ds3231(1);
 //  Built in on Mayfly 1.x
 // ==========================================================================
 /** Start [sensirion_sht4x] */
+/* 
 #include <sensors/SensirionSHT4x.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
@@ -151,6 +152,7 @@ const bool   SHT4xUseHeater = true;
 
 // Create an Sensirion SHT4X sensor object
 SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
+*/
 /** End [sensirion_sht4x] */
 
 
@@ -213,12 +215,10 @@ Variable* teros12EC =
 /** Start [variable_arrays] */
 Variable* variableList[] = {
     new CS500tempRH_Temp(&cs500),            // Temperature (CS500)
-    new CS500tempRH_rH(&cs500),            // Relative Humidity (CS500)
-    new MeterTeros12_Count(&teros12),
-    new MeterTeros12_VWC(&teros12),
-    new MeterTeros12_Temp(&teros12),
-    new MeterTeros12_Ea(&teros12),
-    new MeterTeros12_ECbulk(&teros12),
+    new CS500tempRH_rH(&cs500),              // Relative Humidity (CS500)
+    new MeterTeros12_VWC(&teros12),          // Volumetric Water Content (Teros12)
+    new MeterTeros12_Temp(&teros12),         // Soil Temperature (Teros12)
+    new MeterTeros12_ECbulk(&teros12),       // Soil conductivity (Teros12)
     new ProcessorStats_Battery(&mcuBoard),       // Battery voltage (EnviroDIY_Mayfly_Batt)
     new Modem_SignalPercent(&modem),             // Percent full scale (EnviroDIY_LTEB_SignalPercent)
 };
@@ -244,11 +244,7 @@ const char* UUIDs[] =  // UUID array for device sensors
     {
         "12345678-abcd-1234-ef00-1234567890ab",  // Temperature (CS500)
         "12345678-abcd-1234-ef00-1234567890ab",  // Relative Humidity (CS500)
-        "12345678-abcd-1234-ef00-1234567890ab",  // Temperature (Sensirion_SHT40_Temperature)
-        "12345678-abcd-1234-ef00-1234567890ab",  // Relative humidity (Sensirion_SHT40_Humidity)
         "12345678-abcd-1234-ef00-1234567890ab",  // These are for the TEROS12 sensor
-        "12345678-abcd-1234-ef00-1234567890ab",
-        "12345678-abcd-1234-ef00-1234567890ab",
         "12345678-abcd-1234-ef00-1234567890ab",
         "12345678-abcd-1234-ef00-1234567890ab",
         "12345678-abcd-1234-ef00-1234567890ab",  // Battery voltage (EnviroDIY_Mayfly_Batt)
