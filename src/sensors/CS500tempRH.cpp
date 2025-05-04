@@ -11,7 +11,7 @@
  */
 
 #include "CS500tempRH.h"
-#include <Adafruit_ADS1015.h>
+#include <Adafruit_ADS1X15.h>
 
 
 // For Mayfly version; the battery resistor depends on it
@@ -62,9 +62,9 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
 // We create and set up the ADC object here so that each sensor using
 // the ADC may set the gain appropriately without effecting others.
 #ifndef MS_USE_ADS1015
-        Adafruit_ADS1115 ads(_i2cAddress);  // Use this for the 16-bit version
+        Adafruit_ADS1115 ads;  // Use this for the 16-bit version
 #else
-        Adafruit_ADS1015 ads(_i2cAddress);  // Use this for the 12-bit version
+        Adafruit_ADS1015 ads;  // Use this for the 12-bit version
 #endif
         // ADS Library default settings:
         //  - TI1115 (16 bit)
@@ -81,7 +81,7 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // only allows up to 2.048V
         ads.setGain(GAIN_ONE);
         // Begin ADC
-        ads.begin();
+        ads.begin(_i2cAddress);
 
         // TEMP SENSOR
         // Read Analog to Digital Converter (ADC)
