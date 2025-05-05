@@ -11,7 +11,7 @@
  */
 
 #include "CS500tempRH.h"
-#include <Adafruit_ADS1015.h>
+#include <Adafruit_ADS1X15.h>
 
 
 // For Mayfly version; the battery resistor depends on it
@@ -62,9 +62,9 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
 // We create and set up the ADC object here so that each sensor using
 // the ADC may set the gain appropriately without effecting others.
 #ifndef MS_USE_ADS1015
-        Adafruit_ADS1115 ads(_i2cAddress);  // Use this for the 16-bit version
+        Adafruit_ADS1115 ads;  // Use this for the 16-bit version
 #else
-        Adafruit_ADS1015 ads(_i2cAddress);  // Use this for the 12-bit version
+        Adafruit_ADS1015 ads;  // Use this for the 12-bit version
 #endif
         // ADS Library default settings:
         //  - TI1115 (16 bit)
@@ -77,7 +77,7 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         //    - 2/3 gain +/- 6.144V range (limited to VDD +0.3V max)
 
         // Bump the gain up to 1x = +/- 4.096V range
-        // Sensor return range is 0-2.5V, but the next gain option is 2x which
+        // Sensor return range is 0-1V but the next gain option is 2x which
         // only allows up to 2.048V
         ads.setGain(GAIN_ONE);
         // Begin ADC
@@ -88,9 +88,10 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // Taking this reading includes the 8ms conversion delay.
         // We're allowing the ADS1115 library to do the bit-to-volts conversion
         // for us
-        temp_mV =
-            ads.readADC_SingleEnded_V(_adsChannelTemp) * 1000;  // Getting the reading (in mV)
-        MS_DBG(F("  ads.readADC_SingleEnded_V("), _adsChannelTemp, F("):"),
+        int16_t temp_adc = ads.readADC_SingleEnded(_adsChannelTemp);  // Getting the reading (counts)
+        temp_mV = ads.computeVolts(temp_adc) * 1000; // converting to mV
+        
+        MS_DBG(F("  ads.computeVolts("), _adsChannelTemp, F("):"),
                temp_mV);
         if (temp_mV < 1000 && temp_mV > -1) {
             // Skip results out of range
@@ -106,9 +107,9 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // Taking this reading includes the 8ms conversion delay.
         // We're allowing the ADS1115 library to do the bit-to-volts conversion
         // for us
-        rH_mV =
-            ads.readADC_SingleEnded_V(_adsChannelRH) * 1000;  // Getting the reading
-        MS_DBG(F("  ads.readADC_SingleEnded_V("), _adsChannelRH, F("):"),
+        int16_t rh_adc = ads.readADC_SingleEnded(_adsChannelRH); // Getting the reading
+        rH_mV = ads.computeVolts(rh_adc) * 1000;  // computing millivolts
+        MS_DBG(F("  ads.computeVolts("), _adsChannelRH, F("):"),
                rH_mV);
 
         if (rH_mV < 1000 && rH_mV > -1) {
