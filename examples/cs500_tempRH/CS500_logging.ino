@@ -14,6 +14,22 @@
  * ======================================================================= */
 
 // ==========================================================================
+//  Defines for TinyGSM
+// ==========================================================================
+/** Start [defines] */
+#ifndef TINY_GSM_RX_BUFFER
+#define TINY_GSM_RX_BUFFER 64
+#endif
+#ifndef TINY_GSM_YIELD_MS
+#define TINY_GSM_YIELD_MS 2
+#endif
+#ifndef MQTT_MAX_PACKET_SIZE
+#define MQTT_MAX_PACKET_SIZE 240
+#endif
+/** End [defines] */
+
+
+// ==========================================================================
 //  Include the libraries required for any data logger
 // ==========================================================================
 /** Start [includes] */
@@ -22,11 +38,18 @@
 
 // EnableInterrupt is used by ModularSensors for external and pin change
 // interrupts and must be explicitly included in the main program.
-#include <EnableInterrupt.h>
+// #include <EnableInterrupt.h>
 
 // Include the main header for ModularSensors
 #include <ModularSensors.h>
 /** End [includes] */
+
+// ==========================================================================
+//  Assigning Serial Port Functionality
+// ==========================================================================
+// We give the modem first priority and assign it to hardware serial
+// All of the supported processors have a hardware port available named Serial1
+#define modemSerial Serial1
 
 
 // ==========================================================================
@@ -57,6 +80,68 @@ const int8_t sdCardPwrPin   = -1;  // MCU SD card power pin
 const int8_t sdCardSSPin    = 12;  // SD card chip select/slave select pin
 const int8_t sensorPowerPin = 22;  // MCU pin controlling main sensor power
 /** End [logging_options] */
+
+// ==========================================================================
+//  Wifi/Cellular Modem Options
+//    NOTE:  DON'T USE MORE THAN ONE MODEM OBJECT!
+//           Delete the sections you are not using!
+// ==========================================================================
+
+#if defined BUILD_MODEM_ESPRESSIF_ESP32
+/** Start [espressif_esp32] */
+// For almost anything based on the Espressif ESP8266 using the
+// AT command firmware
+#include <modems/EspressifESP32.h>
+
+// NOTE: Extra hardware and software serial ports are created in the "Settings
+// for Additional Serial Ports" section
+const int32_t modemBaud = 115200;  // Communication speed of the modem
+// NOTE:  This baud rate too fast for an 8MHz board, like the Mayfly!  The
+// module should be programmed to a slower baud rate or set to auto-baud using
+// the AT+UART_CUR or AT+UART_DEF command.
+
+// Modem Pins - Describe the physical pin connection of your modem to your board
+// NOTE:  Use -1 for pins that do not apply
+// Example pins here are for a EnviroDIY ESP32 Bluetooth/Wifi Bee with
+// Mayfly 1.1
+const int8_t modemVccPin   = 18;      // MCU pin controlling modem power
+const int8_t modemResetPin = -1;      // MCU pin connected to modem reset pin
+const int8_t modemLEDPin   = redLED;  // MCU pin connected an LED to show modem
+                                      // status
+
+// Network connection information
+#ifndef wifiId
+const char* wifiId  = "xxxxx";  // WiFi access point name
+#endif
+#ifndef wifiPwd
+const char* wifiPwd = "xxxxx";  // WiFi password (WPA2)
+#endif
+
+// Create the modem object
+EspressifESP32 modemESP(&modemSerial, modemVccPin, modemResetPin, wifiId,
+                        wifiPwd);
+// Create an extra reference to the modem by a generic name
+EspressifESP32 modem = modemESP;
+/** End [espressif_esp32] */
+// ==========================================================================
+#endif
+
+/** Start [modem_variables] */
+// Create RSSI and signal strength variable pointers for the modem
+Variable* modemRSSI =
+    new Modem_RSSI(&modem, "12345678-abcd-1234-ef00-1234567890ab", "RSSI");
+Variable* modemSignalPct = new Modem_SignalPercent(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "signalPercent");
+Variable* modemBatteryState = new Modem_BatteryState(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "modemBatteryCS");
+Variable* modemBatteryPct = new Modem_BatteryPercent(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "modemBatteryPct");
+Variable* modemBatteryVoltage = new Modem_BatteryVoltage(
+    &modem, "12345678-abcd-1234-ef00-1234567890ab", "modemBatterymV");
+Variable* modemTemperature =
+    new Modem_Temp(&modem, "12345678-abcd-1234-ef00-1234567890ab", "modemTemp");
+/** End [modem_variables] */
+
 
 
 // ==========================================================================
@@ -108,9 +193,9 @@ Variable* ds3231Temp =
 //   or can be copied from the `menu_a_la_carte.ino` example
 
 // ==========================================================================
-//  Campbell OBS 3 / OBS 3+ Analog Turbidity Sensor
+//  Campbell CS500 Temp and RH sensor
 // ==========================================================================
-/** Start [campbell_obs3] */
+/** Start [campbell_cs500] */
 #include <CS500tempRH.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
@@ -126,12 +211,12 @@ CS500tempRH cs500(CS500Power,
                     CS500TempADSChannel, CS500RHADSChannel, 
                         CS500ADSi2c_addr, CS500NumberReadings);
 
-// Create turbidity and voltage variable pointers for the low range  of the OBS3
+// Create temp and rH variable pointers 
 Variable* cs500tempdegC = new CS500tempRH_Temp(
     &cs500, "12345678-abcd-1234-ef00-1234567890ab", "TempdegC");
 Variable* cs500RHpct = new CS500tempRH_rH(
     &cs500, "12345678-abcd-1234-ef00-1234567890ab", "rHpct");
-/** End [campbell_obs3] */
+/** End [campbell_cs500] */
 
 
 
@@ -146,7 +231,9 @@ Variable* variableList[] = {
     mcuBoardBatt,
     ds3231Temp,
     cs500tempdegC,
-    cs500RHpct
+    cs500RHpct,
+    modemRSSI,
+    modemSignalPct
 };
 // Count up the number of pointers in the array
 int variableCount = sizeof(variableList) / sizeof(variableList[0]);
@@ -189,9 +276,9 @@ float getBatteryVoltage() {
     return mcuBoard.sensorValues[PROCESSOR_BATTERY_VAR_NUM];
 }
 
-// Set the SW12v power pin high so it is constantly on for testing on a breadboard
+// Set the switched power pin high so it is constantly on for testing on a breadboard
 // Power the sensors;
-void power12v(int8_t sensorPowerPin) {
+void switch_poweron(int8_t sensorPowerPin) {
     if (sensorPowerPin > 0) {
     //Serial.println("Powering up sensors...");
     // pinMode(sensorPowerPin, OUTPUT);
@@ -221,6 +308,21 @@ void setup() {
     Serial.print(F("Using ModularSensors Library version "));
     Serial.println(MODULAR_SENSORS_VERSION);
 
+    Serial.print(F("TinyGSM Library version "));
+    Serial.println(TINYGSM_VERSION);
+    Serial.println();
+
+    Serial.print(F("SSID "));
+    Serial.println(wifiId);
+    Serial.print(F("Password "));
+    Serial.println(wifiPwd);
+    Serial.println();
+
+
+    /** Start [setup_serial_begins] */
+    // Start the serial connection with the modem
+    modemSerial.begin(modemBaud);
+
     // Set up pins for the LED's
     pinMode(greenLED, OUTPUT);
     digitalWrite(greenLED, LOW);
@@ -248,7 +350,9 @@ void setup() {
     // It is STRONGLY RECOMMENDED that you set the RTC to be in UTC (UTC+0)
     Logger::setRTCTimeZone(0);
 
-    // Set information pins
+    // Attach the modem and information pins to the logger
+    dataLogger.attachModem(modem);
+    modem.setModemLED(modemLEDPin);
     dataLogger.setLoggerPins(wakePin, sdCardSSPin, sdCardPwrPin, buttonPin,
                              greenLED);
 
@@ -262,6 +366,24 @@ void setup() {
         varArray.setupSensors();
     }
 
+#if (defined BUILD_MODEM_ESPRESSIF_ESP8266 || \
+     defined BUILD_MODEM_ESPRESSIF_ESP32) &&  \
+    F_CPU == 8000000L
+    /** Start [setup_esp] */
+    if (modemBaud > 57600) {
+        modem.modemWake();  // NOTE:  This will also set up the modem
+        modemSerial.begin(modemBaud);
+        //modem.gsmModem.sendAT(GF(""));
+        modem.gsmModem.sendAT(GF("+UART_DEF=9600,8,1,0,0"));
+        modem.gsmModem.waitResponse();
+        modemSerial.end();
+        modemSerial.begin(9600);
+    }
+    /** End [setup_esp] */
+#endif
+
+
+    /** Start [setup_file] */
     // Create the log file, adding the default header to it
     // Do this last so we have the best chance of getting the time correct and
     // all sensor names correct
@@ -275,9 +397,13 @@ void setup() {
         dataLogger.turnOffSDcard(true);
         // true = wait for internal housekeeping after write
     }
+    /** End [setup_file] */
+
+    /** Start [setup_sleep] */
     // Call the processor sleep
     Serial.println(F("Putting processor to sleep\n"));
-    // dataLogger.systemSleep();
+    dataLogger.systemSleep();
+    /** End [setup_sleep] */
 }
 /** End [setup] */
 
@@ -285,10 +411,137 @@ void setup() {
 // ==========================================================================
 //  Arduino Loop Function
 // ==========================================================================
-/** Start [loop] */
+/** Start [complex_loop] */
+// Use this long loop when you want to do something special
+// Because of the way alarms work on the RTC, it will wake the processor and
+// start the loop every minute exactly on the minute.
+// The processor may also be woken up by another interrupt or level change on a
+// pin - from a button or some other input.
+// The "if" statements in the loop determine what will happen - whether the
+// sensors update, testing mode starts, or it goes back to sleep.
 void loop() {
+    // Reset the watchdog
+    dataLogger.watchDogTimer.resetWatchDog();
 
-    dataLogger.logData();
+    // Assuming we were woken up by the clock, check if the current time is an
+    // even interval of the logging interval
+    // We're only doing anything at all if the battery is above 3.4V
+    if (dataLogger.checkInterval() && getBatteryVoltage() > 3.4) {
+        // Flag to notify that we're in already awake and logging a point
+        Logger::isLoggingNow = true;
+        dataLogger.watchDogTimer.resetWatchDog();
+
+        // Print a line to show new reading
+        Serial.println(F("------------------------------------------"));
+        // Turn on the LED to show we're taking a reading
+        dataLogger.alertOn();
+        // Power up the SD Card, but skip any waits after power up
+        dataLogger.turnOnSDcard(false);
+        dataLogger.watchDogTimer.resetWatchDog();
+
+        // Turn on the modem to let it start searching for the network
+        // Only turn the modem on if the battery at the last interval was high
+        // enough
+        // NOTE:  if the modemPowerUp function is not run before the
+        // completeUpdate
+        // function is run, the modem will not be powered and will not
+        // return a signal strength reading.
+        if (getBatteryVoltage() > 3.6) modem.modemPowerUp();
+
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+        // Start the stream for the modbus sensors, if your RS485 adapter bleeds
+        // current from data pins when powered off & you stop modbus serial
+        // connection with digitalWrite(5, LOW), below.
+        // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+        altSoftSerial.begin(9600);
+#endif
+
+        // Do a complete update on the variable array.
+        // This this includes powering all of the sensors, getting updated
+        // values, and turing them back off.
+        // NOTE:  The wake function for each sensor should force sensor setup
+        // to run if the sensor was not previously set up.
+        varArray.completeUpdate();
+
+        dataLogger.watchDogTimer.resetWatchDog();
+
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+        // Reset modbus serial pins to LOW, if your RS485 adapter bleeds power
+        // on sleep, because Modbus Stop bit leaves these pins HIGH.
+        // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+        digitalWrite(5, LOW);  // Reset AltSoftSerial Tx pin to LOW
+        digitalWrite(6, LOW);  // Reset AltSoftSerial Rx pin to LOW
+#endif
+
+        // Create a csv data record and save it to the log file
+        dataLogger.logToSD();
+        dataLogger.watchDogTimer.resetWatchDog();
+
+        // Connect to the network
+        // Again, we're only doing this if the battery is doing well
+        if (getBatteryVoltage() > 3.55) {
+            dataLogger.watchDogTimer.resetWatchDog();
+            if (modem.connectInternet()) {
+                dataLogger.watchDogTimer.resetWatchDog();
+                // Publish data to remotes
+                Serial.println(F("Modem connected to internet."));
+                dataLogger.publishDataToRemotes();
+
+                // Sync the clock at noon
+                dataLogger.watchDogTimer.resetWatchDog();
+                if (Logger::markedLocalEpochTime != 0 &&
+                    Logger::markedLocalEpochTime % 86400 == 43200) {
+                    Serial.println(F("Running a daily clock sync..."));
+                    dataLogger.setRTClock(modem.getNISTTime());
+                    dataLogger.watchDogTimer.resetWatchDog();
+                    modem.updateModemMetadata();
+                    dataLogger.watchDogTimer.resetWatchDog();
+                }
+
+                // Disconnect from the network
+                modem.disconnectInternet();
+                dataLogger.watchDogTimer.resetWatchDog();
+            }
+            // Turn the modem off
+            modem.modemSleepPowerDown();
+            dataLogger.watchDogTimer.resetWatchDog();
+        }
+
+        // Cut power from the SD card - without additional housekeeping wait
+        dataLogger.turnOffSDcard(false);
+        dataLogger.watchDogTimer.resetWatchDog();
+        // Turn off the LED
+        dataLogger.alertOff();
+        // Print a line to show reading ended
+        Serial.println(F("------------------------------------------\n"));
+
+        // Unset flag
+        Logger::isLoggingNow = false;
+    }
+
+    // Check if it was instead the testing interrupt that woke us up
+    if (Logger::startTesting) {
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+        // Start the stream for the modbus sensors, if your RS485 adapter bleeds
+        // current from data pins when powered off & you stop modbus serial
+        // connection with digitalWrite(5, LOW), below.
+        // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+        altSoftSerial.begin(9600);
+#endif
+
+        dataLogger.testingMode();
+    }
+
+#ifdef BUILD_TEST_ALTSOFTSERIAL
+    // Reset modbus serial pins to LOW, if your RS485 adapter bleeds power
+    // on sleep, because Modbus Stop bit leaves these pins HIGH.
+    // https://github.com/EnviroDIY/ModularSensors/issues/140#issuecomment-389380833
+    digitalWrite(5, LOW);  // Reset AltSoftSerial Tx pin to LOW
+    digitalWrite(6, LOW);  // Reset AltSoftSerial Rx pin to LOW
+#endif
+
+    // Call the processor sleep
+    dataLogger.systemSleep();
 
 }
 /** End [loop] */
