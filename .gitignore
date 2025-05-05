@@ -3,7 +3,7 @@ Thumbs.db
 ehthumbs.db
 ~*
 
-# Dev folder
+# Dev and deployments folder shouldn't be on master branch
 dev
 
 # Folder config file

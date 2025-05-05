@@ -77,7 +77,7 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         //    - 2/3 gain +/- 6.144V range (limited to VDD +0.3V max)
 
         // Bump the gain up to 1x = +/- 4.096V range
-        // Sensor return range is 0-2.5V, but the next gain option is 2x which
+        // Sensor return range is 0-1V but the next gain option is 2x which
         // only allows up to 2.048V
         ads.setGain(GAIN_ONE);
         // Begin ADC
@@ -88,9 +88,10 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // Taking this reading includes the 8ms conversion delay.
         // We're allowing the ADS1115 library to do the bit-to-volts conversion
         // for us
-        temp_mV =
-            ads.readADC_SingleEnded(_adsChannelTemp) * 1000;  // Getting the reading (in mV)
-        MS_DBG(F("  ads.readADC_SingleEnded("), _adsChannelTemp, F("):"),
+        int16_t temp_adc = ads.readADC_SingleEnded(_adsChannelTemp);  // Getting the reading (counts)
+        temp_mV = ads.computeVolts(temp_adc) * 1000; // converting to mV
+        
+        MS_DBG(F("  ads.computeVolts("), _adsChannelTemp, F("):"),
                temp_mV);
         if (temp_mV < 1000 && temp_mV > -1) {
             // Skip results out of range
@@ -106,9 +107,9 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // Taking this reading includes the 8ms conversion delay.
         // We're allowing the ADS1115 library to do the bit-to-volts conversion
         // for us
-        rH_mV =
-            ads.readADC_SingleEnded(_adsChannelRH) * 1000;  // Getting the reading
-        MS_DBG(F("  ads.readADC_SingleEnded("), _adsChannelRH, F("):"),
+        int16_t rh_adc = ads.readADC_SingleEnded(_adsChannelRH); // Getting the reading
+        rH_mV = ads.computeVolts(rh_adc) * 1000;  // computing millivolts
+        MS_DBG(F("  ads.computeVolts("), _adsChannelRH, F("):"),
                rH_mV);
 
         if (rH_mV < 1000 && rH_mV > -1) {
