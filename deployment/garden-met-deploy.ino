@@ -143,16 +143,14 @@ MaximDS3231 ds3231(1);
 //  Built in on Mayfly 1.x
 // ==========================================================================
 /** Start [sensirion_sht4x] */
-/* 
-#include <sensors/SensirionSHT4x.h>
 
+#include <sensors/SensirionSHT4x.h>
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t SHT4xPower     = sensorPowerPin;  // Power pin
-const bool   SHT4xUseHeater = true;
+const bool   SHT4xUseHeater = false;
 
 // Create an Sensirion SHT4X sensor object
 SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
-*/
 /** End [sensirion_sht4x] */
 
 
@@ -167,8 +165,8 @@ const int8_t  CS500Power          = sensorPowerPin;  // Power pin
 const uint8_t CS500NumberReadings = 10;
 const uint8_t CS500ADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
 
-const int8_t CS500TempADSChannel = 0;  // ADS channel for temperature sensor
-const int8_t CS500RHADSChannel = 1;  // ADS channel for humidity sensor
+const int8_t CS500TempADSChannel = 2;  // ADS channel for temperature sensor
+const int8_t CS500RHADSChannel = 3;  // ADS channel for humidity sensor
 
 // Create a CS500 Sensor object
 CS500tempRH cs500(CS500Power, 
@@ -219,8 +217,9 @@ Variable* variableList[] = {
     new MeterTeros12_VWC(&teros12),          // Volumetric Water Content (Teros12)
     new MeterTeros12_Temp(&teros12),         // Soil Temperature (Teros12)
     new MeterTeros12_ECbulk(&teros12),       // Soil conductivity (Teros12)
-    new ProcessorStats_Battery(&mcuBoard),       // Battery voltage (EnviroDIY_Mayfly_Batt)
-    new Modem_SignalPercent(&modem),             // Percent full scale (EnviroDIY_LTEB_SignalPercent)
+    new ProcessorStats_Battery(&mcuBoard),   // Battery voltage (EnviroDIY_Mayfly_Batt)
+    new Modem_SignalPercent(&modem),         // Percent full scale (EnviroDIY_LTEB_SignalPercent)
+    new SensirionSHT4x_Temp(&sht4x)          // logger internal temperature (Sensirion SHT4x)  
 };
 
 // All UUID's, device registration, and sampling feature information can be
@@ -249,6 +248,7 @@ const char* UUIDs[] =  // UUID array for device sensors
         "12345678-abcd-1234-ef00-1234567890ab",
         "12345678-abcd-1234-ef00-1234567890ab",  // Battery voltage (EnviroDIY_Mayfly_Batt)
         "12345678-abcd-1234-ef00-1234567890ab",  // Percent full scale (EnviroDIY_LTEB_SignalPercent)
+        "12345678-abcd-1234-ef00-1234567890ab"   // logger internal temperature
 };
 const char* registrationToken = "12345678-abcd-1234-ef00-1234567890ab";  // Device registration token
 const char* samplingFeature = "12345678-abcd-1234-ef00-1234567890ab";  // Sampling feature UUID
