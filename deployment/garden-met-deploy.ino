@@ -167,11 +167,13 @@ const uint8_t CS500ADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
 
 const int8_t CS500TempADSChannel = 2;  // ADS channel for temperature sensor
 const int8_t CS500RHADSChannel = 3;  // ADS channel for humidity sensor
+const float CS500gain = 1; // ADS gain
 
 // Create a CS500 Sensor object
 CS500tempRH cs500(CS500Power, 
-                    CS500TempADSChannel, CS500RHADSChannel, 
-                        CS500ADSi2c_addr, CS500NumberReadings);
+                    CS500TempADSChannel, CS500RHADSChannel,
+                    CS500gain, 
+                    CS500ADSi2c_addr, CS500NumberReadings);
 /** End [campbell_cs500] */
 
 // ==========================================================================
