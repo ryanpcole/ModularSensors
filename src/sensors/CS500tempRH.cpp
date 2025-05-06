@@ -81,7 +81,7 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // only allows up to 2.048V
         ads.setGain(GAIN_ONE);
         // Begin ADC
-        ads.begin(_i2cAddress);
+        ads.begin();
 
         // TEMP SENSOR
         // Read Analog to Digital Converter (ADC)
