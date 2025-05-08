@@ -157,14 +157,22 @@ bool VariableArray::setupSensors(void) {
 // NOTE:  Calculated variables will always be skipped in this process because
 // a calculated variable will never be marked as the last variable from a
 // sensor.
+// TODO - this prints same sensor multiple times when I run into the bug where reading fails after 2 hrs
 void VariableArray::sensorsPowerUp(void) {
     MS_DBG(F("Powering up sensors..."));
+
+    // WHY DOES THE FOLLOWING LOOP NOT ALWAYS FIND THE CS500?
+
     for (uint8_t i = 0; i < _variableCount; i++) {
+        MS_DBG(F(" TRY TO POWER  "), 
+        arrayOfVars[i]->getParentSensorName(), F(" OF VARIABLE ARRAY"));
         if (isLastVarFromSensor(i)) {  // Skip non-unique sensors
             MS_DBG(F("    Powering up"),
                    arrayOfVars[i]->getParentSensorNameAndLocation());
-
             arrayOfVars[i]->parentSensor->powerUp();
+        } else {
+            MS_DBG(F("DID NOT POWER "), arrayOfVars[i]->getParentSensorName(),
+        F(" - NOT THE LAST VAR FROM SENSOR"));
         }
     }
 }
@@ -584,8 +592,8 @@ bool VariableArray::completeUpdate(void) {
     for (uint8_t i = 0; i < _variableCount; i++) { arrayPositions[i] = i; }
     String nameLocation[_variableCount];
     for (uint8_t i = 0; i < _variableCount; i++) {
-        // nameLocation[i] = arrayOfVars[i]->getParentSensorNameAndLocation();
-        nameLocation[i] = arrayOfVars[i]->getParentSensorName();
+        nameLocation[i] = arrayOfVars[i]->getParentSensorNameAndLocation();
+        //nameLocation[i] = arrayOfVars[i]->getParentSensorName();
     }
     MS_DEEP_DBG(F("----------------------------------"));
     MS_DEEP_DBG(F("arrayPositions:\t\t\t"));
@@ -621,9 +629,12 @@ bool VariableArray::completeUpdate(void) {
     for (uint8_t i = 0; i < _variableCount; i++) {
         if (lastSensorVariable[i]) {
             arrayOfVars[i]->parentSensor->clearValues();
+            MS_DBG(F("CLEARING RESULTS FROM "),
+                   arrayOfVars[i]->getParentSensorNameAndLocation());
         }
     }
     MS_DBG(F("   ... Complete. <<-----"));
+
 
     // power up all of the sensors together
     MS_DBG(F("----->> Powering up all sensors together. ..."));
@@ -881,6 +892,7 @@ void VariableArray::printSensorData(Stream* stream) {
 
 
 // Check for unique sensors
+// TODO - maybe this is where the error occurs?
 bool VariableArray::isLastVarFromSensor(int arrayIndex) {
     // Calculated Variables are never the last variable from a sensor, simply
     // because the don't come from a sensor at all.
@@ -890,11 +902,14 @@ bool VariableArray::isLastVarFromSensor(int arrayIndex) {
         String sensNameLoc =
             arrayOfVars[arrayIndex]->getParentSensorNameAndLocation();
         bool unique = true;
+        MS_DBG(F("--- Checking if "), sensNameLoc, F(" isLastVarFromSensor ---"));
         for (int j = arrayIndex + 1; j < _variableCount; j++) {
+            MS_DBG(F("for "), j, F(" = arrayIndex + 1"));
             if (sensNameLoc ==
                 arrayOfVars[j]->getParentSensorNameAndLocation()) {
-                unique = false;
-                break;
+                    MS_DBG(F("FALSE! "), sensNameLoc, F(" is NOT lastVarFromSensor"));
+                    unique = false;
+                    break;
             }
         }
         return unique;

@@ -76,7 +76,7 @@ bool MeterTeros12::getResults(void) {
     
     // read the next '+' out of the buffer
 #ifdef MS_SDI12SENSORS_DEBUG_DEEP
-    MS_DEEP_DBT(F("    <<<"), static_cast<char>(_SDII12Internal.read()));
+    MS_DEEP_DBG(F("    <<<"), static_cast<char>(_SDI12Internal.read()));
 #else
     _SDI12Internal.read();
 #endif

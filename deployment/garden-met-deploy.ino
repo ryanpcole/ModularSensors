@@ -158,7 +158,7 @@ SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
 //  Campbell CS500 Temp and RH sensor
 // ==========================================================================
 /** Start [campbell_cs500] */
-#include <CS500tempRH.h>
+#include <sensors/CS500tempRH.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t  CS500Power          = sensorPowerPin;  // Power pin
@@ -179,7 +179,7 @@ CS500tempRH cs500(CS500Power,
 // ==========================================================================
 //  METER TEROS12 SDI-12 Soil VWC, Temp, EC Sensor
 // ==========================================================================
-/** Start [meter_teros12]
+/** Start [meter_teros12] */
 #include <sensors/MeterTeros12.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
@@ -216,9 +216,9 @@ Variable* teros12EC =
 Variable* variableList[] = {
     new CS500tempRH_Temp(&cs500),            // Temperature (CS500)
     new CS500tempRH_rH(&cs500),              // Relative Humidity (CS500)
-    //new MeterTeros12_VWC(&teros12),          // Volumetric Water Content (Teros12)
-    //new MeterTeros12_Temp(&teros12),         // Soil Temperature (Teros12)
-    //new MeterTeros12_ECbulk(&teros12),       // Soil conductivity (Teros12)
+    new MeterTeros12_VWC(&teros12),          // Volumetric Water Content (Teros12)
+    new MeterTeros12_Temp(&teros12),         // Soil Temperature (Teros12)
+    new MeterTeros12_ECbulk(&teros12),       // Soil conductivity (Teros12)
     new ProcessorStats_Battery(&mcuBoard),   // Battery voltage (EnviroDIY_Mayfly_Batt)
     new Modem_SignalPercent(&modem),         // Percent full scale (EnviroDIY_LTEB_SignalPercent)
     new SensirionSHT4x_Temp(&sht4x)          // logger internal temperature (Sensirion SHT4x)  
@@ -245,15 +245,15 @@ const char* UUIDs[] =  // UUID array for device sensors
     {
         "12345678-abcd-1234-ef00-1234567890ab",  // Temperature (CS500)
         "12345678-abcd-1234-ef00-1234567890ab",  // Relative Humidity (CS500)
-//        "12345678-abcd-1234-ef00-1234567890ab",  // These are for the TEROS12 sensor
-//        "12345678-abcd-1234-ef00-1234567890ab",
-//        "12345678-abcd-1234-ef00-1234567890ab",
+        "12345678-abcd-1234-ef00-1234567890ab",  // These are for the TEROS12 sensor
+        "12345678-abcd-1234-ef00-1234567890ab",
+        "12345678-abcd-1234-ef00-1234567890ab",
         "12345678-abcd-1234-ef00-1234567890ab",  // Battery voltage (EnviroDIY_Mayfly_Batt)
         "12345678-abcd-1234-ef00-1234567890ab",  // Percent full scale (EnviroDIY_LTEB_SignalPercent)
         "12345678-abcd-1234-ef00-1234567890ab"   // logger internal temperature
 };
-const char* registrationToken = "12345678-abcd-1234-ef00-1234567890ab";  // Device registration token
-const char* samplingFeature = "12345678-abcd-1234-ef00-1234567890ab";  // Sampling feature UUID
+//const char* registrationToken = "12345678-abcd-1234-ef00-1234567890ab";  // Device registration token
+//const char* samplingFeature = "12345678-abcd-1234-ef00-1234567890ab";  // Sampling feature UUID
 
 
 // -----------------------   End of Token UUID List  -----------------------

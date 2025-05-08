@@ -20,7 +20,7 @@
 
 
 // Debugging Statement
-#define MS_MQTTPUBLISHER_DEBUG
+// #define MS_MQTTPUBLISHER_DEBUG
 
 #ifdef MS_MQTTPUBLISHER_DEBUG
 #define MS_DEBUGGING_STD "mqttPublisher"

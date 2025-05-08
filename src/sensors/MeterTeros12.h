@@ -99,7 +99,6 @@
 /// @brief Sensor::_numReturnedValues; the Teros 12 can report 3 raw values -
 /// counts, temperature, EC. It can also report 2 calculated variables: permittivity
 /// and water content
-// TODO Figure out the right number of variables and calced variables for Teros 12
 #define TEROS12_NUM_VARIABLES 5
 /// @brief Sensor::_incCalcValues; We calculate permittivity and water content
 /// from the raw counts and temperature reported by the Teros 12.
