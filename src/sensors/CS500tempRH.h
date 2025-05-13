@@ -331,7 +331,7 @@ class CS500tempRH_Temp : public Variable {
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    CS500tempRH_Temp(
+    explicit CS500tempRH_Temp(
         CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = TEMP_DEGC_DEFAULT_CODE)
         : Variable(parentSense,
@@ -377,7 +377,7 @@ class CS500tempRH_rH : public Variable {
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    CS500tempRH_rH(
+    explicit CS500tempRH_rH(
         CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = RH_PERCENT_DEFAULT_CODE)
         : Variable(parentSense,

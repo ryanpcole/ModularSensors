@@ -29,11 +29,12 @@ CS500tempRH::CS500tempRH(int8_t powerPin,
              powerPin,                    // power pin
              -1,                          // data pin (-1 for there isn' one)
              measurementsToAverage,       // measurements to average
-             CS500_INC_CALC_VARIABLES),   // number of included calculated variables
-      _adsChannelTemp(adsChannelTemp),
-      _adsChannelRH(adsChannelRH),
-      _gain(gain),
-      _i2cAddress(i2cAddress) {}
+             CS500_INC_CALC_VARIABLES) {   // number of included calculated variables
+      _adsChannelTemp = adsChannelTemp;
+      _adsChannelRH = adsChannelRH;
+      _gain = gain;
+      _i2cAddress = i2cAddress;
+    }
 
 // Destructor
 CS500tempRH::~CS500tempRH() {}

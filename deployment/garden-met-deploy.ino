@@ -7,6 +7,7 @@
  * Mayfly v1.x board
  * EnviroDIY ESP32 Wifi Bee module
  * Campbell Sci CS500 temp/rH Sensor
+ * Meter Teros12 soil moisture sensor
  * Sending data over MQTT to madiebookpro.local 
  *
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>

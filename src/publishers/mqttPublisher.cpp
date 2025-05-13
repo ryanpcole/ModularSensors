@@ -135,19 +135,23 @@ int16_t mqttPublisher::publishData(Client* outClient) {
 
     // Make sure we don't have too many fields
     // A channel can have a max of 8 fields
-    if (_baseLogger->getArrayVarCount() > 8) {
+    /* if (_baseLogger->getArrayVarCount() > 8) {
         MS_DBG(F("No more than 8 fields of data can be sent to a single "
                  "MQTT channel!"));
         MS_DBG(F("Only the first 8 fields worth of data will be sent."));
     }
-    uint8_t numChannels = min(_baseLogger->getArrayVarCount(), 8);
     MS_DBG(numChannels, F("fields will be sent via MQTT"));
+    */
 
+    uint8_t numChannels = _baseLogger->getArrayVarCount();
+
+    // TODO figure out how to create buffer without memory issues
     // Create a buffer for the portions of the request and response
-    //char tempBuffer[26] = "";
+    char tempBuffer[26] = "";
+    //char topicBuffer[42] = "channels/";
 
-    const char* topicBuffer = mqttTopic;
-    MS_DBG(F("Topic ["), strlen(topicBuffer), F("]:"), String(topicBuffer));
+    //char topicBuffer[42] = mqttTopic;
+    //MS_DBG(F("Topic ["), strlen(topicBuffer), F("]:"), String(topicBuffer));
 
     // buffer is used only locally, it does not transmit
     txBufferInit(nullptr);
