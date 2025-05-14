@@ -155,6 +155,7 @@ SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
 /** End [sensirion_sht4x] */
 
 
+
 // ==========================================================================
 //  Campbell CS500 Temp and RH sensor
 // ==========================================================================
@@ -163,12 +164,12 @@ SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t  CS500Power          = sensorPowerPin;  // Power pin
-const uint8_t CS500NumberReadings = 10;
+const uint8_t CS500NumberReadings = 1;
 const uint8_t CS500ADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
-
-const int8_t CS500TempADSChannel = 2;  // ADS channel for temperature sensor
-const int8_t CS500RHADSChannel = 3;  // ADS channel for humidity sensor
+const int8_t CS500TempADSChannel = 0;  // ADS channel for temperature sensor
+const int8_t CS500RHADSChannel = 1;  // ADS channel for humidity sensor
 const float CS500gain = 1; // ADS gain
+
 
 // Create a CS500 Sensor object
 CS500tempRH cs500(CS500Power, 
@@ -210,6 +211,31 @@ Variable* teros12EC =
 /** End [meter_teros12] */
 
 /* clang-format off */
+
+// ==========================================================================
+//  External Voltage via TI ADS1115
+// ==========================================================================
+/** Start [tiads1x15] 
+#include <sensors/TIADS1x15.h>
+
+// NOTE: Use -1 for any pins that don't apply or aren't being used.
+const int8_t  ADSPower       = sensorPowerPin;  // Power pin
+const int8_t  ADSChannel0    = 0;               // The ADS channel of interest
+const int8_t  ADSChannel1    = 1;
+const float   dividerGain    = 1;  //  Gain setting if using a voltage divider
+const uint8_t evADSi2c_addr  = 0x48;  // The I2C address of the ADS1115 ADC
+const uint8_t VoltReadsToAvg = 1;     // Only read one sample
+
+// Create an External Voltage sensor object
+TIADS1x15 ads1x150(ADSPower, ADSChannel0, dividerGain, evADSi2c_addr,
+                  VoltReadsToAvg);
+TIADS1x15 ads1x151(ADSPower, ADSChannel1, dividerGain, evADSi2c_addr,
+                  VoltReadsToAvg);
+
+
+// Create a voltage variable pointer
+/** End [tiads1x15] */
+
 // ==========================================================================
 //  Creating the Variable Array[s] and Filling with Variable Objects
 // ==========================================================================
@@ -217,6 +243,8 @@ Variable* teros12EC =
 Variable* variableList[] = {
     new CS500tempRH_Temp(&cs500),            // Temperature (CS500)
     new CS500tempRH_rH(&cs500),              // Relative Humidity (CS500)
+    /*new TIADS1x15_Voltage(&ads1x150),         // generic voltage reading
+    new TIADS1x15_Voltage(&ads1x151),*/         // generic voltage reading
     new MeterTeros12_VWC(&teros12),          // Volumetric Water Content (Teros12)
     new MeterTeros12_Temp(&teros12),         // Soil Temperature (Teros12)
     new MeterTeros12_ECbulk(&teros12),       // Soil conductivity (Teros12)

@@ -4,10 +4,10 @@
  * Part of the EnviroDIY ModularSensors library
  * This library is published under the BSD-3 license.
  * @author Written By: Ryan Cole <ryan.cole@oregonstate.edu>
+ * Adapted from TIADS1x15.cpp by Sara Geleskie Damiano and Bobby Shulz
  *
- * @brief This encapsulates an old school CS500 temperature and rH sensor that needs to be
- * shielded as part of a met station. It has two analog outputs (temp and rH) and needs 12V power
-
+ * @brief Implements a class for a CS500 temperature and rH sensor.
+ *  It has two analog outputs (temp and rH) and needs 12V power
  */
 
 #include "CS500tempRH_ads1x15.h"
@@ -54,12 +54,12 @@ String CS500tempRH::getSensorLocation(void) {
 
 bool CS500tempRH::addSingleMeasurementResult(void) {
     // Variables to store the results in
-    float temp_mV  = -9999;
-    float rH_mV = -9999;
-    float Temp_degC = -9999;
-    float rH_pct = -9999;
-    int16_t temp_adc;
-    int16_t rh_adc;
+    float temp_mV    = -9999;
+    float rH_mV      = -9999;
+    float Temp_degC  = -9999;
+    float rH_pct     = -9999;
+    int16_t temp_adc = -9999;
+    int16_t rh_adc   = -9999;
 
     // Check a measurement was *successfully* started (status bit 6 set)
     // Only go on to get a result if it was
@@ -89,9 +89,7 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // only allows up to 2.048V
         ads.setGain(GAIN_ONE);
         // Begin ADC
-        if (!ads.begin()) {
-            MS_DBG(F(" ERROR: Failed to start ADC "));
-          }
+        ads.begin(_i2cAddress);
 
         // TEMP SENSOR
         // Read Analog to Digital Converter (ADC)
@@ -100,7 +98,6 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
         // for us
         temp_adc = ads.readADC_SingleEnded(_adsChannelTemp);  // Getting the reading (counts)
         temp_mV = ads.computeVolts(temp_adc) * 1000 * _gain; // converting to mV
-        
         MS_DBG(F("  ads.computeVolts("), _adsChannelTemp, F("):"),
                temp_mV);
         if (temp_mV < 1000 && temp_mV > -1) {
@@ -137,11 +134,11 @@ bool CS500tempRH::addSingleMeasurementResult(void) {
 
     // Add Temperature measurement and voltage
     verifyAndAddMeasurementResult(TEMP_DEGC_VAR_NUM, Temp_degC);
-    verifyAndAddMeasurementResult(TEMP_VOLTAGE_VAR_NUM, temp_mV);
+    //verifyAndAddMeasurementResult(TEMP_VOLTAGE_VAR_NUM, temp_mV);
 
     // Add Relative Humidity measurement and voltage
     verifyAndAddMeasurementResult(RH_PERCENT_VAR_NUM, rH_pct);
-    verifyAndAddMeasurementResult(RH_VOLTAGE_VAR_NUM, rH_mV);
+    //verifyAndAddMeasurementResult(RH_VOLTAGE_VAR_NUM, rH_mV);
 
 
     // Unset the time stamp for the beginning of this measurement

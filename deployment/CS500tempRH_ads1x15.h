@@ -1,9 +1,11 @@
 /**
  * @file CS500.h
  * @author Written By: Ryan Cole
+ * Adapted from TIADS1x15.h by Bobby Schulz and Sara Geleskie Damiano
  *
  * @brief Measures temperature and relative humidity using two analog inputs and
- *  onboard ADC and ADC ref.
+ *  onboard ADC and ADC ref. Updated to use the Adafruit ADS1X15 v2 library.abs
+ * 
  */
 /* clang-format off */
 /**
@@ -85,7 +87,7 @@
 #undef MS_DEBUGGING_DEEP
 #include "SensorBase.h"
 #include "VariableBase.h"
-#include "math.h"
+//#include "math.h"
 
 /** @ingroup sensor_cs500 */
 /**@{*/
@@ -114,11 +116,9 @@
  * @brief Sensor::_measurementTime_ms; we assume the analog voltage is measured
  * instantly.
  *
- * measure is included in the read function.
- * On ATmega based boards (UNO, Nano, Mini, Mega), it takes about 100
- * microseconds (0.0001 s) to read an analog inp * It's not really *quite* instantly, but it is very fast and the time to
-ut, so the maximum reading rate
- * is about 10,000 times a second.
+ * the ADS1115 completes 860 conversions per
+ * second, but the wait for the conversion to complete is built into the
+ * underlying library, so we do not need to wait further here.
  */
 #define CS500_MEASUREMENT_TIME_MS 0
 /**@}*/
@@ -129,6 +129,27 @@ ut, so the maximum reading rate
  * @name Raw voltage from air temperature sensor
  * - Range: 0-1.0 V
  *
+ * * The volt variable from a TI ADS1x15 analog-to-digital converter (ADC)
+ *   - Range:
+ *     - without voltage divider:  0 - 3.6V [when ADC is powered at 3.3V]
+ *     - 1/gain = 3x: 0.3 ~ 12.9V
+ *     - 1/gain = 10x: 1 ~ 43V
+ *   - Accuracy:
+ *     - 16-bit ADC (ADS1115): < 0.25% (gain error), <0.25 LSB (offset errror)
+ *     - 12-bit ADC (ADS1015, using build flag ```MS_USE_ADS1015```): < 0.15%
+ * (gain error), <3 LSB (offset errror)
+ *   - Resolution:
+ *     - 16-bit ADC (ADS1115):
+ *       - @m_span{m-dim}@ref #TIADS1X15_RESOLUTION = 4@m_endspan
+ *       - without voltage divider:  0.125 mV
+ *       - 1/gain = 3x: 0.375 mV
+ *       - 1/gain = 10x: 1.25 mV
+ *     - 12-bit ADC (ADS1015, using build flag ```MS_USE_ADS1015```):
+ *       - @m_span{m-dim}@ref #TIADS1X15_RESOLUTION = 1@m_endspan
+ *       - without voltage divider:  2 mV
+ *       - 1/gain = 3x: 6 mV
+ *       - 1/gain = 10x: 20 mV *
+ * 
  * {{ @ref CS500_tempV::CS500_tempV }}
  * 
  *  */
@@ -138,7 +159,6 @@ ut, so the maximum reading rate
  *
  * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define TEMP_VOLTAGE_RESOLUTION 4
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define TEMP_VOLTAGE_VAR_NUM 0
 /// @brief Variable name in
@@ -151,6 +171,8 @@ ut, so the maximum reading rate
 #define TEMP_VOLTAGE_UNIT_NAME "millivolts"
 /// @brief Default variable short code; "mV"
 #define TEMP_VOLTAGE_DEFAULT_CODE "mV"
+/// @brief Number of decimal places in voltage reading (from underlying ADS1X15 library)
+#define TEMP_VOLTAGE_RESOLUTION 4
 /**@}*/
 
 //  Make a section for rH voltage
@@ -168,7 +190,6 @@ ut, so the maximum reading rate
  *
  * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define RH_VOLTAGE_RESOLUTION 4
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define RH_VOLTAGE_VAR_NUM 1
 /// @brief Variable name in
@@ -181,6 +202,9 @@ ut, so the maximum reading rate
 #define RH_VOLTAGE_UNIT_NAME "millivolts"
 /// @brief Default variable short code; "mV"
 #define RH_VOLTAGE_DEFAULT_CODE "mV"
+/// @brief Number of decimal places in voltage reading (from underlying ADS1X15 library)
+#define RH_VOLTAGE_RESOLUTION 4
+
 /**@}*/
 
 // Make a section for calculated temp C
@@ -200,7 +224,6 @@ ut, so the maximum reading rate
  * degC = mV * 0.1 - 40
  * 
  */
-#define TEMP_DEGC_RESOLUTION 1
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define TEMP_DEGC_VAR_NUM 2
 /// @brief Variable name in
@@ -213,6 +236,8 @@ ut, so the maximum reading rate
 #define TEMP_DEGC_UNIT_NAME "Degree Celsius"
 /// @brief Default variable short code; "degC"
 #define TEMP_DEGC_DEFAULT_CODE "degC"
+/// @brief resolution of temperature degrees C reading - one decimal place
+#define TEMP_DEGC_RESOLUTION 1
 /**@}*/
 
 // calcualted rH %
@@ -232,7 +257,6 @@ ut, so the maximum reading rate
  * rH = mV * 0.1
  * 
  */
-#define RH_PERCENT_RESOLUTION 1
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define RH_PERCENT_VAR_NUM 3
 /// @brief Variable name in
@@ -245,6 +269,8 @@ ut, so the maximum reading rate
 #define RH_PERCENT_UNIT_NAME "percent"
 /// @brief Default variable short code; "rH
 #define RH_PERCENT_DEFAULT_CODE "rH%"
+/// @resolution of RH% reading - one decimal place
+#define RH_PERCENT_RESOLUTION 1
 /**@}*/
 
 /// @brief The assumed address of the ADS1115, 1001 000 (ADDR = GND)
@@ -253,7 +279,7 @@ ut, so the maximum reading rate
 /**
  * @brief Class for the analog Temperature and Relative Humidity monitor
  *
- * @ingroup sensor_analog_temprh
+ * @ingroup sensor_CS500
  */
 class CS500tempRH : public Sensor {
  public:
@@ -265,7 +291,8 @@ class CS500tempRH : public Sensor {
      * a secondary hardware or software I2C instance is *not* supported!
 
      * @param powerPin The port pin providing power to the temp/rH probe.
-     * Needs to be 12 V switched power pin (pin XX)
+     * Needs to be 12 V switched power pin (pin XX) - move jumper on mayfly board 
+     * to change to 12 V power.
      * 
      * - The ADS1x15 requires an input voltage of 2.0-5.5V, but this library
      * assumes the ADS is powered with 3.3V.
@@ -283,7 +310,7 @@ class CS500tempRH : public Sensor {
     CS500tempRH(int8_t powerPin,
                         uint8_t adsChannelTemp,
                         uint8_t adsChannelRH,
-                        float gain = 1,
+                        float gain                    = 1,
                         uint8_t i2cAddress            = ADS1115_ADDRESS,  
                         uint8_t measurementsToAverage = 1);
 
@@ -305,18 +332,32 @@ class CS500tempRH : public Sensor {
     bool addSingleMeasurementResult(void) override;
 
  private:
+     /**
+     * @brief Internal reference to the ADS channel for the temperature wire 
+     * of the sensor
+     */
     uint8_t _adsChannelTemp;
-    uint8_t _adsChannelRH;
+     /**
+     * @brief Internal reference to the ADS channel rH wire of the sensor
+     */
+     uint8_t _adsChannelRH;
+     
+     /**
+     * @brief Internal reference to the gain setting for the TI-ADS1x15
+     */
     float _gain;
+    /**
+     * @brief Internal reference to the I2C address of the TI-ADS1x15
+     */
     uint8_t _i2cAddress;
 
 };
 
 /**
- * @brief The variable class used for Temperature and Relative Humidity measured 
+ * @brief The variable class used for Temperature measured 
  * using analog pins connected to CS500 sensor
  *
- * @ingroup sensor_analog_temprh
+ * @ingroup sensor_CS500
  *
  */
 class CS500tempRH_Temp : public Variable {
@@ -332,7 +373,8 @@ class CS500tempRH_Temp : public Variable {
      * optional with a default value of "degC".
      */
     explicit CS500tempRH_Temp(
-        CS500tempRH* parentSense, const char* uuid = "",
+        CS500tempRH* parentSense, 
+        const char* uuid = "",
         const char* varCode = TEMP_DEGC_DEFAULT_CODE)
         : Variable(parentSense,
                    (const uint8_t)TEMP_DEGC_VAR_NUM,
@@ -359,7 +401,7 @@ class CS500tempRH_Temp : public Variable {
 };
 
 /**
- * @brief The variable class used for Temperature and Relative Humidity measured 
+ * @brief The variable class used for Relative Humidity measured 
  * using analog pins connected to CS500 sensor
  *
  * @ingroup sensor_analog_temprh
@@ -368,7 +410,7 @@ class CS500tempRH_Temp : public Variable {
 class CS500tempRH_rH : public Variable {
  public:
     /**
-     * @brief Construct a new  CS500tempRH_Temp object.
+     * @brief Construct a new CS500tempRH_rH object.
      *
      * @param parentSense The parent CS500tempRH providing the result
      * values.
