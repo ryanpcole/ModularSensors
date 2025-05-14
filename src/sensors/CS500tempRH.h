@@ -114,10 +114,10 @@
  * @brief Sensor::_measurementTime_ms; we assume the analog voltage is measured
  * instantly.
  *
+ * It's not really *quite* instantly, but it is very fast and the time to
  * measure is included in the read function.
  * On ATmega based boards (UNO, Nano, Mini, Mega), it takes about 100
- * microseconds (0.0001 s) to read an analog inp * It's not really *quite* instantly, but it is very fast and the time to
-ut, so the maximum reading rate
+ * microseconds (0.0001 s) to read an analog input, so the maximum reading rate
  * is about 10,000 times a second.
  */
 #define CS500_MEASUREMENT_TIME_MS 0
@@ -274,7 +274,6 @@ class CS500tempRH : public Sensor {
      * temp sensor is connected to (0-3).
      * @param adsChannel The analog data channel _on the TI ADS1115_ that the
      * rH sensor is connected to (0-3).
-     * @param gain The gain multiplier, if a voltage divider is used
      * @param i2cAddress The I2C address of the ADS 1x15, default is 0x48 (ADDR
      * = GND)
      * @param measurementsToAverage The number of measurements to average;
@@ -283,7 +282,6 @@ class CS500tempRH : public Sensor {
     CS500tempRH(int8_t powerPin,
                         uint8_t adsChannelTemp,
                         uint8_t adsChannelRH,
-                        float gain = 1,
                         uint8_t i2cAddress            = ADS1115_ADDRESS,  
                         uint8_t measurementsToAverage = 1);
 
@@ -307,7 +305,6 @@ class CS500tempRH : public Sensor {
  private:
     uint8_t _adsChannelTemp;
     uint8_t _adsChannelRH;
-    float _gain;
     uint8_t _i2cAddress;
 
 };
@@ -331,7 +328,7 @@ class CS500tempRH_Temp : public Variable {
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    explicit CS500tempRH_Temp(
+    CS500tempRH_Temp(
         CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = TEMP_DEGC_DEFAULT_CODE)
         : Variable(parentSense,
@@ -377,7 +374,7 @@ class CS500tempRH_rH : public Variable {
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    explicit CS500tempRH_rH(
+    CS500tempRH_rH(
         CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = RH_PERCENT_DEFAULT_CODE)
         : Variable(parentSense,
