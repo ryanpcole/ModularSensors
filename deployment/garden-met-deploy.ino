@@ -159,7 +159,7 @@ SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
 //  Campbell CS500 Temp and RH sensor
 // ==========================================================================
 /** Start [campbell_cs500] */
-#include <sensors/CS500tempRH.h>
+#include <CS500tempRH_ads1x15.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t  CS500Power          = sensorPowerPin;  // Power pin

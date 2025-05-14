@@ -147,7 +147,7 @@ int16_t mqttPublisher::publishData(Client* outClient) {
 
     // TODO figure out how to create buffer without memory issues
     // Create a buffer for the portions of the request and response
-    char tempBuffer[26] = "";
+    //char tempBuffer[26] = "";
     //char topicBuffer[42] = "channels/";
 
     //char topicBuffer[42] = mqttTopic;
