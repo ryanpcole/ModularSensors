@@ -160,7 +160,7 @@ SensirionSHT4x sht4x(SHT4xPower, SHT4xUseHeater);
 //  Campbell CS500 Temp and RH sensor
 // ==========================================================================
 /** Start [campbell_cs500] */
-#include <CS500tempRH_ads1x15.h>
+#include <sensors/CS500tempRH.h>
 
 // NOTE: Use -1 for any pins that don't apply or aren't being used.
 const int8_t  CS500Power          = sensorPowerPin;  // Power pin
@@ -168,13 +168,13 @@ const uint8_t CS500NumberReadings = 1;
 const uint8_t CS500ADSi2c_addr    = 0x48;  // The I2C address of the ADS1115 ADC
 const int8_t CS500TempADSChannel = 0;  // ADS channel for temperature sensor
 const int8_t CS500RHADSChannel = 1;  // ADS channel for humidity sensor
-const float CS500gain = 1; // ADS gain
+//const float CS500gain = 1; // ADS gain
 
 
 // Create a CS500 Sensor object
 CS500tempRH cs500(CS500Power, 
                     CS500TempADSChannel, CS500RHADSChannel,
-                    CS500gain, 
+                   // CS500gain, 
                     CS500ADSi2c_addr, CS500NumberReadings);
 /** End [campbell_cs500] */
 
@@ -224,7 +224,7 @@ const int8_t  ADSChannel0    = 0;               // The ADS channel of interest
 const int8_t  ADSChannel1    = 1;
 const float   dividerGain    = 1;  //  Gain setting if using a voltage divider
 const uint8_t evADSi2c_addr  = 0x48;  // The I2C address of the ADS1115 ADC
-const uint8_t VoltReadsToAvg = 1;     // Only read one sample
+const uint8_t VoltReadsToAvg = 50;     // Only read one sample
 
 // Create an External Voltage sensor object
 TIADS1x15 ads1x150(ADSPower, ADSChannel0, dividerGain, evADSi2c_addr,
@@ -243,8 +243,8 @@ TIADS1x15 ads1x151(ADSPower, ADSChannel1, dividerGain, evADSi2c_addr,
 Variable* variableList[] = {
     new CS500tempRH_Temp(&cs500),            // Temperature (CS500)
     new CS500tempRH_rH(&cs500),              // Relative Humidity (CS500)
-    /*new TIADS1x15_Voltage(&ads1x150),         // generic voltage reading
-    new TIADS1x15_Voltage(&ads1x151),*/         // generic voltage reading
+    //new TIADS1x15_Voltage(&ads1x150),         // generic voltage reading
+    //new TIADS1x15_Voltage(&ads1x151),        // generic voltage reading
     new MeterTeros12_VWC(&teros12),          // Volumetric Water Content (Teros12)
     new MeterTeros12_Temp(&teros12),         // Soil Temperature (Teros12)
     new MeterTeros12_ECbulk(&teros12),       // Soil conductivity (Teros12)
@@ -309,9 +309,9 @@ Logger dataLogger(LoggerID, loggingInterval, &varArray);
 // ==========================================================================
 // Creating a generic mqtt publisher 
 const char* MQTTtopic =
-    "gardenmet";  // Your MQTT password
+    "gardenmet";  // Your MQTT topic
 
-// Create a data publisher for ThingSpeak
+// Create a data publisher for MQTT
 #include <publishers/mqttPublisher.h>
 mqttPublisher Mqtt;
 /** End [loggers] */
