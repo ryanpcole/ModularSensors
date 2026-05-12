@@ -59,7 +59,7 @@ const char* sketchName = "garden-met-deploy.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
 const char* LoggerID = "garden_met";
 // How frequently (in minutes) to log data
-const uint8_t loggingInterval = 1;
+const uint8_t loggingInterval = 15;
 // Your logger's timezone.
 const int8_t timeZone = -8;  // Pacific Standard Time
 // NOTE:  Daylight savings time will not be applied!  Please use standard time!
