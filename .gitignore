@@ -1,3 +1,6 @@
+# arduino secrets
+arduino_secrets.h
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
@@ -93,7 +96,7 @@ docs/examples/*
 docs/examples.dox_x
 platformio_extra_envs.ini
 src/sensors/table.md
-cache
+.cache
 output_*.log
 clang_format_all.bat
 arduino_lint.md
