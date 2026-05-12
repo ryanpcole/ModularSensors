@@ -57,7 +57,7 @@
  *     - [Manual](https://github.com/EnviroDIY/YosemitechModbus/tree/master/doc/Y551-UV254-COD_UserManual_v1.0.pdf)
  *     - [Modbus Instructions](https://github.com/EnviroDIY/YosemitechModbus/tree/master/doc/Y551-UV254-COD_Modbus_v2020-05-11.pdf)
  *     - [Class Documentation](@ref sensor_y551)
- * - [Y560 Ammoinum Probe with Wiper](http://en.yosemitech.com/aspcms/product/2020-4-23/61.html)
+ * - [Y560 Ammonium Probe with Wiper](http://en.yosemitech.com/aspcms/product/2020-4-23/61.html)
  *     - [Manual](https://github.com/EnviroDIY/YosemitechModbus/tree/master/doc/Y560-NH4_UserManual_v1.0.pdf)
  *     - [Modbus Instructions](https://github.com/EnviroDIY/YosemitechModbus/tree/master/doc/Y560-NH4_Modbus_v2020-05-11.pdf)
  *     - [Class Documentation](@ref sensor_y560)
@@ -68,7 +68,7 @@
  *     - [Modbus Instructions](https://github.com/EnviroDIY/YosemitechModbus/tree/master/doc/Y4000-Sonde-1.6-ModbusInstruction-en.pdf)
  *     - [Class Documentation](@ref sensor_y4000)
  *
- * Most of these sensors require a 9-12V power supply, but some can opperate as
+ * Most of these sensors require a 9-12V power supply, but some can operate as
  * low as 5V and sondes (Y560 & Y4000) require 12V. The power supply can be stopped between measurements for all.
  * (_Note that any user settings (such as brushing frequency) will be lost if the sensor loses power._)
  * They communicate via [Modbus RTU](https://en.wikipedia.org/wiki/Modbus) over [RS-485](https://en.wikipedia.org/wiki/RS-485).
@@ -87,7 +87,7 @@
  * This will _fry_ any board like the Mayfly that uses 3.3V logic.
  * You would need a voltage shifter in between the Mayfly and the MAX485 to make it work.
  *
- * The sensor constructor requires as input: the sensor modbus address, a stream instance for data (ie, ```Serial```), and one or two power pins.
+ * The sensor constructor requires as input: the sensor modbus address, a stream instance for data (i.e., ```Serial```), and one or two power pins.
  * The Arduino pin controlling the receive and data enable on your RS485-to-TTL adapter and the number of readings to average are optional.
  * (Use -1 for the second power pin and -1 for the enable pin if these don't apply and you want to average more than one reading.)
  * For all of these sensors except pH, Yosemitech strongly recommends averaging 10 readings for each measurement.
@@ -114,22 +114,27 @@
 #ifndef SRC_SENSORS_YOSEMITECHPARENT_H_
 #define SRC_SENSORS_YOSEMITECHPARENT_H_
 
-// Debugging Statement
-// #define MS_YOSEMITECHPARENT_DEBUG
-// #define MS_YOSEMITECHPARENT_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_YOSEMITECHPARENT_DEBUG
 #define MS_DEBUGGING_STD "YosemitechParent"
 #endif
-
 #ifdef MS_YOSEMITECHPARENT_DEBUG_DEEP
 #define MS_DEBUGGING_DEEP "YosemitechParent"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
 #undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "SensorBase.h"
 #include "YosemitechModbus.h"
@@ -163,7 +168,7 @@ class YosemitechParent : public Sensor {
      * average before giving a "final" result from the sensor; optional with a
      * default value of 1.
      * @param model The model of Yosemitech sensor.
-     * @param sensName The name of the sensor.  Defaults to "SDI12-Sensor".
+     * @param sensName The name of the sensor.  Defaults to "Yosemitech-Sensor".
      * @param numVariables The number of variable results returned by the
      * sensor. Defaults to 2.
      * @param warmUpTime_ms The time in ms between when the sensor is powered on
@@ -202,12 +207,9 @@ class YosemitechParent : public Sensor {
     /**
      * @brief Destroy the Yosemitech Parent object - no action taken
      */
-    virtual ~YosemitechParent();
+    ~YosemitechParent() override = default;
 
-    /**
-     * @copydoc Sensor::getSensorLocation()
-     */
-    String getSensorLocation(void) override;
+    String getSensorLocation() override;
 
     /**
      * @brief Do any one-time preparations needed before the sensor will be able
@@ -220,37 +222,27 @@ class YosemitechParent : public Sensor {
      *
      * @return True if the setup was successful.
      */
-    bool setup(void) override;
+    bool setup() override;
     /**
-     * @brief Wake the sensor up, if necessary.  Do whatever it takes to get a
-     * sensor in the proper state to begin a measurement.
+     * @brief Wakes the sensor, starts measurements, and activates brushes.
      *
-     * Verifies that the power is on and updates the #_sensorStatus.  This also
-     * sets the #_millisSensorActivated timestamp.
-     *
-     * @note This does NOT include any wait for sensor readiness.
+     * Unlike base Sensor::wake(), this starts measurements and activates the
+     * brushes (where applicable).  Yosemitech sensors do not start to stabilize
+     * until after starting measurements.  So we activate the sensor as part of
+     * the wake and then must wait the stabilization time + 1 measurement time
+     * before requesting the first result.
      *
      * @return True if the wake function completed successfully.
      */
-    bool wake(void) override;
+    bool wake() override;
     /**
-     * @brief Puts the sensor to sleep, if necessary.
+     * @brief Stop measurements and empty and flush the stream before sleeping.
      *
-     * This also un-sets the #_millisSensorActivated timestamp (sets it to 0).
-     * This does NOT power down the sensor!
-     *
-     * @return True if the sleep function completed successfully.
+     * @return True if sleep was successful.
      */
-    bool sleep(void) override;
+    bool sleep() override;
 
-    // Override these to use two power pins
-    void powerUp(void) override;
-    void powerDown(void) override;
-
-    /**
-     * @copydoc Sensor::addSingleMeasurementResult()
-     */
-    bool addSingleMeasurementResult(void) override;
+    bool addSingleMeasurementResult() override;
 
  private:
     /**
@@ -267,7 +259,7 @@ class YosemitechParent : public Sensor {
      */
     byte _modbusAddress;
     /**
-     * @brief Private reference to the stream for communciation with the
+     * @brief Private reference to the stream for communication with the
      * Yosemitech sensor.
      */
     Stream* _stream;
@@ -276,10 +268,8 @@ class YosemitechParent : public Sensor {
      * pin.
      */
     int8_t _RS485EnablePin;
-    /**
-     * @brief Private reference to the power pin fro the RS-485 adapter.
-     */
-    int8_t _powerPin2;
 };
 
 #endif  // SRC_SENSORS_YOSEMITECHPARENT_H_
+
+// cSpell:words ysensor

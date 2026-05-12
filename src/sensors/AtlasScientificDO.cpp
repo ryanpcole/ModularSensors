@@ -3,10 +3,10 @@
  * @copyright Stroud Water Research Center
  * Part of the EnviroDIY ModularSensors library for Arduino.
  * This library is published under the BSD-3 license.
- * @author Initial developement for Atlas Sensors was done by Adam Gold
+ * @author Initial development for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
- * @brief Implements the AtlasScientificCO2 class.
+ * @brief Implements the AtlasScientificDO class.
  */
 
 // Included Dependencies
@@ -20,15 +20,11 @@ AtlasScientificDO::AtlasScientificDO(TwoWire* theI2C, int8_t powerPin,
                   "AtlasScientificDO", ATLAS_DO_NUM_VARIABLES,
                   ATLAS_DO_WARM_UP_TIME_MS, ATLAS_DO_STABILIZATION_TIME_MS,
                   ATLAS_DO_MEASUREMENT_TIME_MS, ATLAS_DO_INC_CALC_VARIABLES) {}
+// Delegating constructor
 AtlasScientificDO::AtlasScientificDO(int8_t powerPin, uint8_t i2cAddressHex,
                                      uint8_t measurementsToAverage)
-    : AtlasParent(powerPin, i2cAddressHex, measurementsToAverage,
-                  "AtlasScientificDO", ATLAS_DO_NUM_VARIABLES,
-                  ATLAS_DO_WARM_UP_TIME_MS, ATLAS_DO_STABILIZATION_TIME_MS,
-                  ATLAS_DO_MEASUREMENT_TIME_MS, ATLAS_DO_INC_CALC_VARIABLES) {}
-
-// Destructor
-AtlasScientificDO::~AtlasScientificDO() {}
+    : AtlasScientificDO(&Wire, powerPin, i2cAddressHex, measurementsToAverage) {
+}
 
 
 // Setup
@@ -38,6 +34,7 @@ bool AtlasScientificDO::setup() {
 
     // This sensor needs power for setup!
     // We want to turn on all possible measurement parameters
+    delay(10);
     bool wasOn = checkPowerOn();
     if (!wasOn) { powerUp(); }
     waitForWarmUp();
@@ -60,9 +57,9 @@ bool AtlasScientificDO::setup() {
 
     if (!success) {
         // Set the status error bit (bit 7)
-        _sensorStatus |= 0b10000000;
+        setStatusBit(ERROR_OCCURRED);
         // UN-set the set-up bit (bit 0) since setup failed!
-        _sensorStatus &= 0b11111110;
+        clearStatusBit(SETUP_SUCCESSFUL);
     }
 
     // Turn the power back off it it had been turned on

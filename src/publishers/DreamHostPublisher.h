@@ -14,16 +14,23 @@
 #ifndef SRC_PUBLISHERS_DREAMHOSTPUBLISHER_H_
 #define SRC_PUBLISHERS_DREAMHOSTPUBLISHER_H_
 
-// Debugging Statement
-// #define MS_DREAMHOSTPUBLISHER_DEBUG
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_DREAMHOSTPUBLISHER_DEBUG
 #define MS_DEBUGGING_STD "DreamHostPublisher"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
+
+// Include other in-library and external dependencies
 #include "dataPublisherBase.h"
 
 
@@ -41,9 +48,31 @@ class DreamHostPublisher : public dataPublisher {
  public:
     // Constructors
     /**
-     * @brief Construct a new DreamHost Publisher object with no members set.
+     * @brief Construct a new DreamHost Publisher object
+     *
+     * @param baseLogger The logger supplying the data to be published
+     * @param inClient An Arduino client instance to use to print data to.
+     * Allows the use of any type of client and multiple clients tied to a
+     * single TinyGSM modem instance
+     * @param dhUrl The URL for sending data to DreamHost
      */
-    DreamHostPublisher();
+    DreamHostPublisher(Logger& baseLogger, Client* inClient, const char* dhUrl);
+    /**
+     * @brief Construct a new DreamHost Publisher object
+     *
+     * @param baseLogger The logger supplying the data to be published
+     * @param inClient An Arduino client instance to use to print data to.
+     * Allows the use of any type of client and multiple clients tied to a
+     * single TinyGSM modem instance
+     */
+    DreamHostPublisher(Logger& baseLogger, Client* inClient);
+    /**
+     * @brief Construct a new DreamHost Publisher object
+     *
+     * @param baseLogger The logger supplying the data to be published
+     * @param dhUrl The URL for sending data to DreamHost
+     */
+    DreamHostPublisher(Logger& baseLogger, const char* dhUrl);
     /**
      * @brief Construct a new DreamHost Publisher object
      *
@@ -52,52 +81,23 @@ class DreamHostPublisher : public dataPublisher {
      * logger.
      *
      * @param baseLogger The logger supplying the data to be published
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
      */
-    explicit DreamHostPublisher(Logger& baseLogger, int sendEveryX = 1);
+    explicit DreamHostPublisher(Logger& baseLogger);
     /**
-     * @brief Construct a new DreamHost Publisher object
+     * @brief Construct a new DreamHost Publisher object with all members set to
+     * default or null.
      *
-     * @param baseLogger The logger supplying the data to be published
-     * @param inClient An Arduino client instance to use to print data to.
-     * Allows the use of any type of client and multiple clients tied to a
-     * single TinyGSM modem instance
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
+     * @note You must call the begin() function to initialize the members before
+     * using the publisher.
      */
-    DreamHostPublisher(Logger& baseLogger, Client* inClient,
-                       int sendEveryX = 1);
-    /**
-     * @brief Construct a new DreamHost Publisher object
-     *
-     * @param baseLogger The logger supplying the data to be published
-     * @param dhUrl The URL for sending data to DreamHost
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
-     */
-    DreamHostPublisher(Logger& baseLogger, const char* dhUrl,
-                       int sendEveryX = 1);
-    /**
-     * @brief Construct a new DreamHost Publisher object
-     *
-     * @param baseLogger The logger supplying the data to be published
-     * @param inClient An Arduino client instance to use to print data to.
-     * Allows the use of any type of client and multiple clients tied to a
-     * single TinyGSM modem instance
-     * @param dhUrl The URL for sending data to DreamHost
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
-     */
-    DreamHostPublisher(Logger& baseLogger, Client* inClient, const char* dhUrl,
-                       int sendEveryX = 1);
+    DreamHostPublisher();
     /**
      * @brief Destroy the DreamHost Publisher object
      */
-    virtual ~DreamHostPublisher();
+    ~DreamHostPublisher() override = default;
 
     // Returns the data destination
-    String getEndpoint(void) override {
+    String getEndpoint() override {
         return String(dreamhostHost);
     }
 
@@ -109,7 +109,6 @@ class DreamHostPublisher : public dataPublisher {
      */
     void setDreamHostPortalRX(const char* dhUrl);
 
-    // A way to begin with everything already set
     /**
      * @copydoc dataPublisher::begin(Logger& baseLogger, Client* inClient)
      * @param dhUrl The URL for sending data to DreamHost
@@ -131,10 +130,12 @@ class DreamHostPublisher : public dataPublisher {
      * @param outClient An Arduino client instance to use to print data to.
      * Allows the use of any type of client and multiple clients tied to a
      * single TinyGSM modem instance
+     * @param forceFlush Ask the publisher to flush buffered data immediately.
      *
      * @return The http status code of the response.
      */
-    int16_t publishData(Client* outClient) override;
+    int16_t publishData(Client* outClient,
+                        bool forceFlush = MS_ALWAYS_FLUSH_PUBLISHERS) override;
 
  protected:
     // portions of the GET request

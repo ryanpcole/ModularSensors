@@ -98,13 +98,13 @@
  * It is good practice to select which network you'll be connecting to based on
  * your SIM card and signal availability.
  * Example code for this can also be found in the
- * [menu a la carte example](@ref setup_r4_carrrier).
+ * [menu a la carte example](@ref setup_r4_carrier).
  *
  * @note The network selection for a Sodaq LTE-M UBee is identical to that for
  * an LTE-M XBee in bypass mode or any other module based on the u-blox SARA
  * R4 series.
  *
- * @menusnip{setup_r4_carrrier}
+ * @menusnip{setup_r4_carrier}
  */
 /* clang-format on */
 
@@ -112,10 +112,13 @@
 #ifndef SRC_MODEMS_SODAQUBEER410M_H_
 #define SRC_MODEMS_SODAQUBEER410M_H_
 
-// Debugging Statement
-// #define MS_SODAQUBEER410M_DEBUG
-// #define MS_SODAQUBEER410M_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_SODAQUBEER410M_DEBUG
 #define MS_DEBUGGING_STD "SodaqUBeeR410M"
 #endif
@@ -124,17 +127,15 @@
  * @brief The modem type for the underlying TinyGSM library.
  */
 #define TINY_GSM_MODEM_SARAR4
-#ifndef TINY_GSM_RX_BUFFER
-/**
- * @brief The size of the buffer for incoming data.
- */
-#define TINY_GSM_RX_BUFFER 64
-#endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
-#include "TinyGsmClient.h"
+#undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
+#include "TinyGsmClientSaraR4.h"
 #include "LoggerModem.h"
 
 #ifdef MS_SODAQUBEER410M_DEBUG_DEEP
@@ -197,14 +198,14 @@
  */
 #define R410M_WAKE_DELAY_MS 250
 /**
- * @brief The loggerModem::_max_atresponse_time_ms.
+ * @brief The loggerModem::_max_at_response_time_ms.
  *
  * Time until system and digital pins on SARA R4 are operational is ~4.5s.
  */
-#define R410M_ATRESPONSE_TIME_MS 4500L
+#define R410M_AT_RESPONSE_TIME_MS 4500L
 
 /**
- * @brief The loggerModem::_disconnetTime_ms.
+ * @brief The loggerModem::_disconnectTime_ms.
  *
  * Power down time for u-blox modules _"can largely vary depending on the
  * application / network settings and the concurrent module activities."_  The
@@ -218,17 +219,15 @@
  * @brief The loggerModem subclass for the
  * [LTE-M](@ref modem_ubee_ltem) [Sodaq UBee](@ref modem_ublox) based on the
  * u-blox SARA R410M LTE-M cellular module.  This can be also used for any other
- * breakout of the the u-blox R4 or N4 series modules.
+ * breakout of the u-blox R4 or N4 series modules.
  */
 class SodaqUBeeR410M : public loggerModem {
  public:
-    // Constructor/Destructor
-
 #if F_CPU == 8000000L
     /**
      * @brief Construct a new Sodaq UBee R410M object
      *
-     * The constuctor initializes all of the provided member variables,
+     * The constructor initializes all of the provided member variables,
      * constructs a loggerModem parent class with the appropriate timing for the
      * module, calls the constructor for a TinyGSM modem on the provided
      * modemStream, and creates a TinyGSM Client linked to the modem.
@@ -267,7 +266,7 @@ class SodaqUBeeR410M : public loggerModem {
     /**
      * @brief Construct a new Sodaq UBee R410M object
      *
-     * The constuctor initializes all of the provided member variables,
+     * The constructor initializes all of the provided member variables,
      * constructs a loggerModem parent class with the appropriate timing for the
      * module, calls the constructor for a TinyGSM modem on the provided
      * modemStream, and creates a TinyGSM Client linked to the modem.
@@ -298,21 +297,37 @@ class SodaqUBeeR410M : public loggerModem {
     /**
      * @brief Destroy the Sodaq UBee R410M object - no action needed
      */
-    ~SodaqUBeeR410M();
+    ~SodaqUBeeR410M() override = default;
 
-    bool modemWake(void) override;
+    bool modemWake() override;
 
     bool connectInternet(uint32_t maxConnectionTime = 50000L) override;
-    void disconnectInternet(void) override;
+    void disconnectInternet() override;
 
-    uint32_t getNISTTime(void) override;
+    Client* createClient() override;
+    void    deleteClient(Client* client) override;
+    Client* createSecureClient() override;
+    void    deleteSecureClient(Client* client) override;
+    Client* createSecureClient(SSLAuthMode sslAuthMode,
+                               SSLVersion  sslVersion     = SSLVersion::TLS1_2,
+                               const char* CAcertName     = nullptr,
+                               const char* clientCertName = nullptr,
+                               const char* clientKeyName  = nullptr) override;
+    Client* createSecureClient(
+        const char* pskIdent, const char* psKey,
+        SSLVersion sslVersion = SSLVersion::TLS1_2) override;
+    Client* createSecureClient(
+        const char* pskTableName,
+        SSLVersion  sslVersion = SSLVersion::TLS1_2) override;
+
+    uint32_t getNISTTime() override;
 
     bool  getModemSignalQuality(int16_t& rssi, int16_t& percent) override;
     bool  getModemBatteryStats(int8_t& chargeState, int8_t& percent,
                                int16_t& milliVolts) override;
-    float getModemChipTemperature(void) override;
+    float getModemChipTemperature() override;
 
-    bool modemHardReset(void) override;
+    bool modemHardReset() override;
 
 #ifdef MS_SODAQUBEER410M_DEBUG_DEEP
     StreamDebugger _modemATDebugger;
@@ -321,11 +336,7 @@ class SodaqUBeeR410M : public loggerModem {
     /**
      * @brief Public reference to the TinyGSM modem.
      */
-    TinyGsm gsmModem;
-    /**
-     * @brief Public reference to the TinyGSM Client.
-     */
-    TinyGsmClient gsmClient;
+    TinyGsmSaraR4 gsmModem;
 
 #if F_CPU == 8000000L
     /**
@@ -336,14 +347,30 @@ class SodaqUBeeR410M : public loggerModem {
 #endif
 
  protected:
-    bool isInternetAvailable(void) override;
-    bool modemSleepFxn(void) override;
-    bool modemWakeFxn(void) override;
-    bool extraModemSetup(void) override;
-    bool isModemAwake(void) override;
+    bool isInternetAvailable() override;
+    bool modemSleepFxn() override;
+    bool modemWakeFxn() override;
+    bool extraModemSetup() override;
+    bool isModemAwake() override;
 
  private:
     const char* _apn;  ///< Internal reference to the cellular APN
+
+#if F_CPU == 8000000L || defined(DOXYGEN)
+    /**
+     * @brief Configure modem to use a lower baud rate (9600) for slow
+     * processors.
+     *
+     * This helper method encapsulates the baud rate switching logic needed for
+     * F_CPU == 8000000L to slow down the R4/N4's default 115200 baud rate. The
+     * baud rate setting is NOT saved to non-volatile memory, so it must be
+     * changed every time after losing power.
+     */
+    void configureLowBaudRate();
+#endif
 };
+
 /**@}*/
 #endif  // SRC_MODEMS_SODAQUBEER410M_H_
+
+// cSpell:ignore _ltem

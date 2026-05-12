@@ -20,17 +20,13 @@ DigiXBeeLTEBypass::DigiXBeeLTEBypass(Stream* modemStream, int8_t powerPin,
     : DigiXBee(powerPin, statusPin, useCTSStatus, modemResetPin,
                modemSleepRqPin),
 #ifdef MS_DIGIXBEELTEBYPASS_DEBUG_DEEP
-      _modemATDebugger(*modemStream, DEEP_DEBUGGING_SERIAL_OUTPUT),
+      _modemATDebugger(*modemStream, MS_SERIAL_OUTPUT),
       gsmModem(_modemATDebugger),
 #else
       gsmModem(*modemStream),
 #endif
-      gsmClient(gsmModem),
       _apn(apn) {
 }
-
-// Destructor
-DigiXBeeLTEBypass::~DigiXBeeLTEBypass() {}
 
 MS_IS_MODEM_AWAKE(DigiXBeeLTEBypass);
 MS_MODEM_WAKE(DigiXBeeLTEBypass);
@@ -39,13 +35,18 @@ MS_MODEM_CONNECT_INTERNET(DigiXBeeLTEBypass);
 MS_MODEM_DISCONNECT_INTERNET(DigiXBeeLTEBypass);
 MS_MODEM_IS_INTERNET_AVAILABLE(DigiXBeeLTEBypass);
 
-MS_MODEM_GET_NIST_TIME(DigiXBeeLTEBypass);
+MS_MODEM_CREATE_CLIENT(DigiXBeeLTEBypass, SaraR4);
+MS_MODEM_DELETE_CLIENT(DigiXBeeLTEBypass, SaraR4);
+MS_MODEM_CREATE_SECURE_CLIENT(DigiXBeeLTEBypass, SaraR4);
+MS_MODEM_DELETE_SECURE_CLIENT(DigiXBeeLTEBypass, SaraR4);
+
+MS_MODEM_GET_NIST_TIME(DigiXBeeLTEBypass, SaraR4);
 
 MS_MODEM_GET_MODEM_SIGNAL_QUALITY(DigiXBeeLTEBypass);
 MS_MODEM_GET_MODEM_BATTERY_DATA(DigiXBeeLTEBypass);
 MS_MODEM_GET_MODEM_TEMPERATURE_DATA(DigiXBeeLTEBypass);
 
-bool DigiXBeeLTEBypass::extraModemSetup(void) {
+bool DigiXBeeLTEBypass::extraModemSetup() {
     bool success = false;
     MS_DBG(F("Putting XBee into command mode..."));
     for (uint8_t i = 0; i < 5; i++) {
@@ -133,10 +134,7 @@ bool DigiXBeeLTEBypass::extraModemSetup(void) {
         /** Re-initialize the TinyGSM SARA R4 instance. */
         MS_DBG(F("Attempting to reconnect to the u-blox SARA R410M module..."));
         success &= gsmModem.init();
-        gsmClient.init(&gsmModem);
         _modemName = gsmModem.getModemName();
-    } else {
-        success = false;
     }
 
     if (success) {
@@ -147,7 +145,7 @@ bool DigiXBeeLTEBypass::extraModemSetup(void) {
     return success;
 }
 
-bool DigiXBeeLTEBypass::modemHardReset(void) {
+bool DigiXBeeLTEBypass::modemHardReset() {
     bool success = false;
     // If the u-blox cellular component isn't responding but the Digi processor
     // is, use the Digi API to reset the cellular component
@@ -161,7 +159,7 @@ bool DigiXBeeLTEBypass::modemHardReset(void) {
     }
     if (success) {
         MS_DBG(F("... and forcing a reset of the cellular component."));
-        // Force a reset of the undelying cellular component
+        // Force a reset of the underlying cellular component
         gsmModem.sendAT(GF("!R"));
         success &= gsmModem.waitResponse(30000L, GF("OK\r")) == 1;
         // Exit command mode

@@ -59,7 +59,7 @@
 /**
  * @anchor sensor_y533_var_counts
  * @name Sensor Variable Counts
- * The number of variables that can be returned by a Yosemitch Y533
+ * The number of variables that can be returned by a Yosemitech Y533
  */
 /**@{*/
 /// @brief Sensor::_numReturnedValues; the Y533 can report 2 values.
@@ -71,7 +71,7 @@
 /**
  * @anchor sensor_y533_timing
  * @name Sensor Timing
- * The sensor timing for a Yosemitch Y533
+ * The sensor timing for a Yosemitech Y533
  */
 /**@{*/
 /// @brief Sensor::_warmUpTime_ms; time before sensor responds after power -
@@ -88,7 +88,7 @@
 /**
  * @anchor sensor_y533_orp
  * @name pH
- * The ORP variable from a Yosemitch Y533
+ * The ORP variable from a Yosemitech Y533
  * - Range is -999 to 999 mV
  * - Accuracy is ±20 mV
  * - Resolution is 1 mV
@@ -96,7 +96,11 @@
  * {{ @ref YosemitechY533_ORP::YosemitechY533_ORP }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; ph should have 2 -
+/// @brief Minimum ORP; -999 mV
+#define Y533_ORP_MIN_MV -999
+/// @brief Maximum ORP; 999 mV
+#define Y533_ORP_MAX_MV 999
+/// @brief Decimal places in string representation; ORP should have 0 -
 /// resolution is 1 mV units.
 #define Y533_ORP_RESOLUTION 0
 /// @brief Sensor variable number; ORP is stored in sensorValues[0].
@@ -118,14 +122,18 @@
 /**
  * @anchor sensor_y533_temp
  * @name Temperature
- * The temperature variable from a Yosemitch Y533
+ * The temperature variable from a Yosemitech Y533
  * - Range is 0°C to + 50°C
  * - Accuracy is ± 0.2°C
  *
  * {{ @ref YosemitechY533_Temp::YosemitechY533_Temp }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; temperature should have 1 -
+/// @brief Minimum temperature; 0°C
+#define Y533_TEMP_MIN_C 0
+/// @brief Maximum temperature; 50°C
+#define Y533_TEMP_MAX_C 50
+/// @brief Decimal places in string representation; temperature should have 1 -
 /// resolution is 0.1°C.
 #define Y533_TEMP_RESOLUTION 1
 /// @brief Sensor variable number; temperature is stored in sensorValues[1].
@@ -196,7 +204,7 @@ class YosemitechY533 : public YosemitechParent {
     /**
      * @brief Destroy the Yosemitech Y533 object
      */
-    ~YosemitechY533() {}
+    ~YosemitechY533() override = default;
 };
 
 
@@ -212,35 +220,24 @@ class YosemitechY533 : public YosemitechParent {
 class YosemitechY533_ORP : public Variable {
  public:
     /**
-     * @brief Construct a new YosemitechY533_pH object.
+     * @brief Construct a new YosemitechY533_ORP object.
      *
      * @param parentSense The parent YosemitechY533 providing the result
      * values.
      * @param uuid A universally unique identifier (UUID or GUID) for the
      * variable; optional with the default value of an empty string.
      * @param varCode A short code to help identify the variable in files;
-     * optional with a default value of "Y533pH".
+     * optional with a default value of "Y533ORP".
      */
     explicit YosemitechY533_ORP(YosemitechY533* parentSense,
                                 const char*     uuid    = "",
                                 const char*     varCode = Y533_ORP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y533_ORP_VAR_NUM,
-                   (uint8_t)Y533_ORP_RESOLUTION, Y533_ORP_VAR_NAME,
-                   Y533_ORP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY533_ORP object.
-     *
-     * @note This must be tied with a parent YosemitechY533 before it can be
-     * used.
-     */
-    YosemitechY533_ORP()
-        : Variable((const uint8_t)Y533_ORP_VAR_NUM,
-                   (uint8_t)Y533_ORP_RESOLUTION, Y533_ORP_VAR_NAME,
-                   Y533_ORP_UNIT_NAME, Y533_ORP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y533_ORP_VAR_NUM, Y533_ORP_RESOLUTION,
+                   Y533_ORP_VAR_NAME, Y533_ORP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY533_ORP object - no action needed.
      */
-    ~YosemitechY533_ORP() {}
+    ~YosemitechY533_ORP() override = default;
 };
 
 
@@ -268,23 +265,12 @@ class YosemitechY533_Temp : public Variable {
     explicit YosemitechY533_Temp(YosemitechY533* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y533_TEMP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y533_TEMP_VAR_NUM,
-                   (uint8_t)Y533_TEMP_RESOLUTION, Y533_TEMP_VAR_NAME,
-                   Y533_TEMP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY533_Temp object.
-     *
-     * @note This must be tied with a parent YosemitechY533 before it can be
-     * used.
-     */
-    YosemitechY533_Temp()
-        : Variable((const uint8_t)Y533_TEMP_VAR_NUM,
-                   (uint8_t)Y533_TEMP_RESOLUTION, Y533_TEMP_VAR_NAME,
-                   Y533_TEMP_UNIT_NAME, Y533_TEMP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y533_TEMP_VAR_NUM, Y533_TEMP_RESOLUTION,
+                   Y533_TEMP_VAR_NAME, Y533_TEMP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY533_Temp object - no action needed.
      */
-    ~YosemitechY533_Temp() {}
+    ~YosemitechY533_Temp() override = default;
 };
 
 /**@}*/

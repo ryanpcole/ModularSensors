@@ -17,9 +17,12 @@
 #include <EnableInterrupt.h>
 #include <SDI12.h>
 
-#define SERIAL_BAUD 115200  // The baud rate for the output serial port
-#define DATA_PIN 7          // The pin of the SDI-12 data bus
-#define POWER_PIN 22  // The // Sensor power pin (or -1 if not switching power)
+// The baud rate for the output serial port
+#define SERIAL_BAUD 115200
+// The pin of the SDI-12 data bus
+#define DATA_PIN 7
+// The Sensor power pin (or -1 if not switching power)
+#define POWER_PIN 22
 
 // Define the SDI-12 bus
 SDI12 mySDI12(DATA_PIN);
@@ -30,8 +33,7 @@ char   oldAddress = '!';  // invalid address as placeholder
 
 // this checks for activity at a particular address
 // expects a char, '0'-'9', 'a'-'z', or 'A'-'Z'
-boolean
-checkActive(byte i) {  // this checks for activity at a particular address
+boolean checkActive(byte i) {
     Serial.print("Checking address ");
     Serial.print(static_cast<char>(i));
     Serial.print("...");
@@ -63,7 +65,7 @@ void setup() {
         // wait
     }
 
-    // Enable interrupts for the recieve pin
+    // Enable interrupts for the receive pin
     pinMode(DATA_PIN, INPUT_PULLUP);
     enableInterrupt(DATA_PIN, SDI12::handleInterrupt, CHANGE);
 
@@ -154,6 +156,6 @@ void loop() {
         delay(300);
         mySDI12.clearBuffer();
 
-        Serial.println("Success. Rescanning for verification.");
+        Serial.println("Success. Re-scanning for verification.");
     }
 }

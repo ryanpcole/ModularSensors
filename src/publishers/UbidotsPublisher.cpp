@@ -23,9 +23,7 @@ const char* UbidotsPublisher::postEndpoint = "/api/v1.6/devices/";
 const char* UbidotsPublisher::ubidotsHost  = "industrial.api.ubidots.com";
 const int   UbidotsPublisher::ubidotsPort  = 80;
 const char* UbidotsPublisher::tokenHeader  = "\r\nX-Auth-Token: ";
-//
-//
-//
+
 const char* UbidotsPublisher::contentLengthHeader = "\r\nContent-Length: ";
 const char* UbidotsPublisher::contentTypeHeader =
     "\r\nContent-Type: application/json\r\n\r\n";
@@ -34,35 +32,33 @@ const char* UbidotsPublisher::payload = "{";
 
 
 // Constructors
-UbidotsPublisher::UbidotsPublisher() : dataPublisher() {}
-UbidotsPublisher::UbidotsPublisher(Logger& baseLogger, int sendEveryX)
-    : dataPublisher(baseLogger, sendEveryX) {}
+// Primary constructor with all authentication parameters and client
 UbidotsPublisher::UbidotsPublisher(Logger& baseLogger, Client* inClient,
-                                   int sendEveryX)
-    : dataPublisher(baseLogger, inClient, sendEveryX) {}
+                                   const char* authenticationToken,
+                                   const char* deviceID)
+    : dataPublisher(baseLogger, inClient) {
+    if (authenticationToken && authenticationToken[0] != '\0') {
+        setToken(authenticationToken);
+    }
+    if (deviceID && deviceID[0] != '\0') {
+        _baseLogger->setSamplingFeatureUUID(deviceID);
+    }
+}
+
+// Delegating constructors
 UbidotsPublisher::UbidotsPublisher(Logger&     baseLogger,
-                                   const char* authentificationToken,
-                                   const char* deviceID, int sendEveryX)
-    : dataPublisher(baseLogger, sendEveryX) {
-    setToken(authentificationToken);
-    _baseLogger->setSamplingFeatureUUID(deviceID);
-    MS_DBG(F("dataPublisher object created"));
-}
-UbidotsPublisher::UbidotsPublisher(Logger& baseLogger, Client* inClient,
-                                   const char* authentificationToken,
-                                   const char* deviceID, int sendEveryX)
-    : dataPublisher(baseLogger, inClient, sendEveryX) {
-    setToken(authentificationToken);
-    _baseLogger->setSamplingFeatureUUID(deviceID);
-    MS_DBG(F("dataPublisher object created"));
-}
-// Destructor
-UbidotsPublisher::~UbidotsPublisher() {}
+                                   const char* authenticationToken,
+                                   const char* deviceID)
+    : UbidotsPublisher(baseLogger, nullptr, authenticationToken, deviceID) {}
+UbidotsPublisher::UbidotsPublisher(Logger& baseLogger, Client* inClient)
+    : UbidotsPublisher(baseLogger, inClient, nullptr, nullptr) {}
+UbidotsPublisher::UbidotsPublisher(Logger& baseLogger)
+    : UbidotsPublisher(baseLogger, nullptr, nullptr, nullptr) {}
+UbidotsPublisher::UbidotsPublisher() : dataPublisher() {}
 
 
-void UbidotsPublisher::setToken(const char* authentificationToken) {
-    _authentificationToken = authentificationToken;
-    MS_DBG(F("Registration token set!"));
+void UbidotsPublisher::setToken(const char* authenticationToken) {
+    _authenticationToken = authenticationToken;
 }
 
 
@@ -76,8 +72,8 @@ uint16_t UbidotsPublisher::calculateJsonSize() {
     for (uint8_t i = 0; i < _baseLogger->getArrayVarCount(); i++) {
         jsonLength += 1;  //  "
         jsonLength +=
-            _baseLogger->getVarUUIDAtI(i).length();  // parameter ID length
-        jsonLength += 11;                            //  ":{"value":
+            strlen(_baseLogger->getVarUUIDAtI(i));  // parameter ID length
+        jsonLength += 11;                           //  ":{"value":
         jsonLength += _baseLogger->getValueStringAtI(i).length();
         jsonLength += 13;  // ,"timestamp":
         jsonLength += 13;  // epoch time in milliseconds
@@ -91,40 +87,58 @@ uint16_t UbidotsPublisher::calculateJsonSize() {
 }
 
 
-// A way to begin with everything already set
+// A way to set members in the begin to use with a bare constructor
 void UbidotsPublisher::begin(Logger& baseLogger, Client* inClient,
-                             const char* authentificationToken,
+                             const char* authenticationToken,
                              const char* deviceID) {
-    setToken(authentificationToken);
+    if (authenticationToken && authenticationToken[0] != '\0') {
+        setToken(authenticationToken);
+    }
     dataPublisher::begin(baseLogger, inClient);
-    _baseLogger->setSamplingFeatureUUID(deviceID);
+    if (deviceID && deviceID[0] != '\0') {
+        _baseLogger->setSamplingFeatureUUID(deviceID);
+    }
 }
 void UbidotsPublisher::begin(Logger&     baseLogger,
-                             const char* authentificationToken,
+                             const char* authenticationToken,
                              const char* deviceID) {
-    setToken(authentificationToken);
+    if (authenticationToken && authenticationToken[0] != '\0') {
+        setToken(authenticationToken);
+    }
     dataPublisher::begin(baseLogger);
-    _baseLogger->setSamplingFeatureUUID(deviceID);
+    if (deviceID && deviceID[0] != '\0') {
+        _baseLogger->setSamplingFeatureUUID(deviceID);
+    }
 }
 
 
-// This utilizes an attached modem to make a TCP connection to the
-// EnviroDIY/ODM2DataSharingPortal and then streams out a post request
-// over that connection.
-// The return is the http status code of the response.
-// int16_t EnviroDIYPublisher::postDataEnviroDIY(void)
-int16_t UbidotsPublisher::publishData(Client* outClient) {
+// This utilizes an attached modem to make a TCP connection to Ubidots and then
+// streams out a post request over that connection. The return is the http
+// status code of the response.
+int16_t UbidotsPublisher::publishData(Client* outClient, bool) {
     // Create a buffer for the portions of the request and response
-    char     tempBuffer[37] = "";
+    char     tempBuffer[12] = "";
     uint16_t did_respond    = 0;
+    int16_t  responseCode   = 0;
+    if (_baseLogger->getSamplingFeatureUUID() == nullptr ||
+        strlen(_baseLogger->getSamplingFeatureUUID()) == 0) {
+        PRINTOUT(F("A sampling feature UUID must be set before publishing data "
+                   "to Ubidots!"));
+        return -1;  // Configuration error
+    }
+    if (_authenticationToken == nullptr || _authenticationToken[0] == '\0') {
+        PRINTOUT(F("An authentication token must be set before publishing data "
+                   "to Ubidots!"));
+        return -1;  // Configuration error
+    }
 
     MS_DBG(F("Outgoing JSON size:"), calculateJsonSize());
 
-    // Open a TCP/IP connection to the Enviro DIY Data Portal (WebSDL)
+    // Open a TCP/IP connection to Ubidots
     MS_DBG(F("Connecting client"));
     MS_START_DEBUG_TIMER;
     if (outClient->connect(ubidotsHost, ubidotsPort)) {
-        MS_DBG(F("Client connected after"), MS_PRINT_DEBUG_TIMER, F("ms\n"));
+        MS_DBG(F("Client connected after"), MS_PRINT_DEBUG_TIMER, F("ms"));
         txBufferInit(outClient);
 
         // copy the initial post header into the tx buffer
@@ -138,7 +152,7 @@ int16_t UbidotsPublisher::publishData(Client* outClient) {
         txBufferAppend(hostHeader);
         txBufferAppend(ubidotsHost);
         txBufferAppend(tokenHeader);
-        txBufferAppend(_authentificationToken);
+        txBufferAppend(_authenticationToken);
 
         txBufferAppend(contentLengthHeader);
         itoa(calculateJsonSize(), tempBuffer, 10);  // BASE 10
@@ -151,11 +165,11 @@ int16_t UbidotsPublisher::publishData(Client* outClient) {
 
         for (uint8_t i = 0; i < _baseLogger->getArrayVarCount(); i++) {
             txBufferAppend('"');
-            txBufferAppend(_baseLogger->getVarUUIDAtI(i).c_str());
+            txBufferAppend(_baseLogger->getVarUUIDAtI(i));
             txBufferAppend("\":{\"value\":");
             txBufferAppend(_baseLogger->getValueStringAtI(i).c_str());
             txBufferAppend(",\"timestamp\":");
-            ltoa(Logger::markedUTCEpochTime, tempBuffer, 10);  // BASE 10
+            ltoa(Logger::markedUTCUnixTime, tempBuffer, 10);  // BASE 10
             txBufferAppend(tempBuffer);
             txBufferAppend("000}");
             if (i + 1 != _baseLogger->getArrayVarCount()) {
@@ -170,7 +184,8 @@ int16_t UbidotsPublisher::publishData(Client* outClient) {
 
         // Wait 10 seconds for a response from the server
         uint32_t start = millis();
-        while ((millis() - start) < 10000L && outClient->available() < 12) {
+        while ((millis() - start) < 10000L && outClient->connected() &&
+               outClient->available() < 12) {
             delay(10);
         }
 
@@ -178,6 +193,31 @@ int16_t UbidotsPublisher::publishData(Client* outClient) {
         // We're only reading as far as the http code, anything beyond that
         // we don't care about.
         did_respond = outClient->readBytes(tempBuffer, 12);
+        // Process the HTTP response code
+        // The first 9 characters should be "HTTP/1.1 "
+        if (did_respond >= 12) {
+            char responseCode_char[4];
+            memcpy(responseCode_char, tempBuffer + HTTP_VERSION_PREFIX_LEN, 3);
+            // Null terminate the string
+            memset(responseCode_char + 3, '\0', 1);
+            responseCode = atoi(responseCode_char);
+            PRINTOUT(F("\n-- Response Code --"));
+            PRINTOUT(responseCode);
+        } else {
+            responseCode = 504;
+            PRINTOUT(F("\n-- NO RESPONSE FROM SERVER --"));
+        }
+
+#if defined(MS_OUTPUT) || defined(MS_2ND_OUTPUT)
+        // throw the rest of the response into the tx buffer so we can debug it
+        txBufferInit(nullptr);
+        txBufferAppend(tempBuffer, 12, true);
+        while (outClient->available()) {
+            char c = outClient->read();
+            txBufferAppend(c);
+        }
+        txBufferFlush();
+#endif
 
         // Close the TCP/IP connection
         MS_DBG(F("Stopping client"));
@@ -185,24 +225,8 @@ int16_t UbidotsPublisher::publishData(Client* outClient) {
         outClient->stop();
         MS_DBG(F("Client stopped after"), MS_PRINT_DEBUG_TIMER, F("ms"));
     } else {
-        PRINTOUT(F("\n -- Unable to Establish Connection to Ubiots --"));
+        PRINTOUT(F("\n -- Unable to Establish Connection to Ubidots --"));
     }
-
-    // Process the HTTP response
-    int16_t responseCode = 0;
-    if (did_respond > 0) {
-        char responseCode_char[4];
-        responseCode_char[3] = 0;
-        for (uint8_t i = 0; i < 3; i++) {
-            responseCode_char[i] = tempBuffer[i + 9];
-        }
-        responseCode = atoi(responseCode_char);
-    } else {
-        responseCode = 504;
-    }
-
-    PRINTOUT(F("\n-- Response Code --"));
-    PRINTOUT(responseCode);
 
     return responseCode;
 }

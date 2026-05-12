@@ -31,9 +31,9 @@
 // The name of this program file
 const char* sketchName = "simple_logging.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
-const char* LoggerID = "XXXXX";
+const char* LoggerID = "YourLoggerID";
 // How frequently (in minutes) to log data
-const uint8_t loggingInterval = 15;
+const int8_t loggingInterval = 15;
 // Your logger's timezone.
 const int8_t timeZone = -5;  // Eastern Standard Time
 // NOTE:  Daylight savings time will not be applied!  Please use standard time!
@@ -43,7 +43,7 @@ const int8_t timeZone = -5;  // Eastern Standard Time
 const int32_t serialBaud = 115200;  // Baud rate for debugging
 const int8_t  greenLED   = 8;       // Pin for the green LED
 const int8_t  redLED     = 9;       // Pin for the red LED
-const int8_t  buttonPin  = 21;      // Pin for debugging mode (ie, button pin)
+const int8_t  buttonPin  = 21;      // Pin for debugging mode (i.e., button pin)
 const int8_t  wakePin    = 31;  // MCU interrupt/alarm pin to wake from sleep
 // Mayfly 0.x D31 = A7
 // Set the wake pin to -1 if you do not want the main processor to sleep.
@@ -57,13 +57,13 @@ const int8_t sensorPowerPin = 22;  // MCU pin controlling main sensor power
 // ==========================================================================
 //  Using the Processor as a Sensor
 // ==========================================================================
-/** Start [processor_sensor] */
+/** Start [processor_stats] */
 #include <sensors/ProcessorStats.h>
 
 // Create the main processor chip "sensor" - for general metadata
 const char*    mcuBoardVersion = "v1.1";
 ProcessorStats mcuBoard(mcuBoardVersion);
-/** End [processor_sensor] */
+/** End [processor_stats] */
 
 
 // ==========================================================================
@@ -124,7 +124,7 @@ Logger dataLogger;
 // ==========================================================================
 /** Start [working_functions] */
 // Flashes the LED's on the primary board
-void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
+void greenRedFlash(uint8_t numFlash = 4, uint8_t rate = 75) {
     for (uint8_t i = 0; i < numFlash; i++) {
         digitalWrite(greenLED, HIGH);
         digitalWrite(redLED, LOW);
@@ -162,13 +162,13 @@ void setup() {
     pinMode(redLED, OUTPUT);
     digitalWrite(redLED, LOW);
     // Blink the LEDs to show the board is on and starting up
-    greenredflash();
+    greenRedFlash();
 
     // Set the timezones for the logger/data and the RTC
     // Logging in the given time zone
     Logger::setLoggerTimeZone(timeZone);
     // It is STRONGLY RECOMMENDED that you set the RTC to be in UTC (UTC+0)
-    Logger::setRTCTimeZone(0);
+    loggerClock::setRTCOffset(0);
 
     // Set information pins
     dataLogger.setLoggerPins(wakePin, sdCardSSPin, sdCardPwrPin, buttonPin,

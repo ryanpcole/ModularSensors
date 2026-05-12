@@ -13,21 +13,6 @@
  * ======================================================================= */
 
 // ==========================================================================
-//  Defines for TinyGSM
-// ==========================================================================
-/** Start [defines] */
-#ifndef TINY_GSM_RX_BUFFER
-#define TINY_GSM_RX_BUFFER 64
-#endif
-#ifndef TINY_GSM_YIELD_MS
-#define TINY_GSM_YIELD_MS 2
-#endif
-#ifndef MQTT_MAX_PACKET_SIZE
-#define MQTT_MAX_PACKET_SIZE 240
-#endif
-/** End [defines] */
-
-// ==========================================================================
 //  Include the libraries required for any data logger
 // ==========================================================================
 /** Start [includes] */
@@ -46,9 +31,9 @@
 // The name of this program file
 const char* sketchName = "logging_to_ThingSpeak.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
-const char* LoggerID = "XXXXX";
+const char* LoggerID = "YourLoggerID";
 // How frequently (in minutes) to log data
-const uint8_t loggingInterval = 15;
+const int8_t loggingInterval = 15;
 // Your logger's timezone.
 const int8_t timeZone = -5;  // Eastern Standard Time
 // NOTE:  Daylight savings time will not be applied!  Please use standard time!
@@ -58,7 +43,7 @@ const int8_t timeZone = -5;  // Eastern Standard Time
 const int32_t serialBaud = 115200;  // Baud rate for debugging
 const int8_t  greenLED   = 8;       // Pin for the green LED
 const int8_t  redLED     = 9;       // Pin for the red LED
-const int8_t  buttonPin  = 21;      // Pin for debugging mode (ie, button pin)
+const int8_t  buttonPin  = 21;      // Pin for debugging mode (i.e., button pin)
 const int8_t  wakePin    = 31;  // MCU interrupt/alarm pin to wake from sleep
 // Mayfly 0.x D31 = A7
 // Set the wake pin to -1 if you do not want the main processor to sleep.
@@ -91,8 +76,8 @@ const int8_t modemLEDPin =
     redLED;  // MCU pin connected an LED to show modem status
 
 // Network connection information
-const char* wifiId  = "xxxxx";  // The WiFi access point
-const char* wifiPwd = "xxxxx";  // The password for connecting to WiFi
+const char* wifiId  = "YourWiFiSSID";  // The WiFi access point
+const char* wifiPwd = "YourWiFiPassword";       // The WiFi password
 
 // Create the loggerModem object
 EspressifESP8266 modemESP(&modemSerial, modemVccPin, modemResetPin, wifiId,
@@ -105,13 +90,13 @@ EspressifESP8266 modem = modemESP;
 // ==========================================================================
 //  Using the Processor as a Sensor
 // ==========================================================================
-/** Start [processor_sensor] */
+/** Start [processor_stats] */
 #include <sensors/ProcessorStats.h>
 
 // Create the main processor chip "sensor" - for general metadata
 const char*    mcuBoardVersion = "v1.1";
 ProcessorStats mcuBoard(mcuBoardVersion);
-/** End [processor_sensor] */
+/** End [processor_stats] */
 
 
 // ==========================================================================
@@ -133,7 +118,6 @@ MaximDS3231 ds3231(1);
 
 const int8_t  OBS3Power = sensorPowerPin;  // Power pin (-1 if unconnected)
 const uint8_t OBS3NumberReadings = 10;
-const uint8_t ADSi2c_addr        = 0x48;  // The I2C address of the ADS1115 ADC
 // Campbell OBS 3+ *Low* Range Calibration in Volts
 const int8_t OBSLowADSChannel = 0;  // ADS channel for *low* range output
 const float  OBSLow_A         = 0.000E+00;  // "A" value (X^2) [*low* range]
@@ -142,7 +126,7 @@ const float  OBSLow_C         = 0.000E+00;  // "C" value [*low* range]
 
 // Create a Campbell OBS3+ *low* range sensor object
 CampbellOBS3 osb3low(OBS3Power, OBSLowADSChannel, OBSLow_A, OBSLow_B, OBSLow_C,
-                     ADSi2c_addr, OBS3NumberReadings);
+                     OBS3NumberReadings);
 
 
 // Campbell OBS 3+ *High* Range Calibration in Volts
@@ -153,7 +137,7 @@ const float  OBSHigh_C         = 0.000E+00;  // "C" value [*high* range]
 
 // Create a Campbell OBS3+ *high* range sensor object
 CampbellOBS3 osb3high(OBS3Power, OBSHighADSChannel, OBSHigh_A, OBSHigh_B,
-                      OBSHigh_C, ADSi2c_addr, OBS3NumberReadings);
+                      OBSHigh_C, OBS3NumberReadings);
 /** End [obs3] */
 
 
@@ -215,12 +199,16 @@ Logger dataLogger;
 // Any custom name or identifier given to the field on ThingSpeak is irrelevant.
 // No more than 8 fields of data can go to any one channel.  Any fields beyond
 // the eighth in the array will be ignored.
-const char* thingSpeakMQTTKey =
-    "XXXXXXXXXXXXXXXX";  // Your MQTT API Key from Account > MyProfile.
+const char* thingSpeakClientName =
+    "XXXXXXXXXXXXXXXX";  // The client name for your MQTT device
+const char* thingSpeakMQTTUser =
+    "XXXXXXXXXXXXXXXX";  // The user name for your MQTT device.
+const char* thingSpeakMQTTPassword =
+    "XXXXXXXXXXXXXXXX";  // The password for your MQTT device
 const char* thingSpeakChannelID =
     "######";  // The numeric channel id for your channel
-const char* thingSpeakChannelKey =
-    "XXXXXXXXXXXXXXXX";  // The Write API Key for your channel
+const char* thingSpeakAPIKey =
+    "XXXXXXXXXXXXXXXX";  // The ThingSpeak user REST API key
 
 // Create a data publisher for ThingSpeak
 #include <publishers/ThingSpeakPublisher.h>
@@ -233,7 +221,7 @@ ThingSpeakPublisher TsMqtt;
 // ==========================================================================
 /** Start [working_functions] */
 // Flashes the LED's on the primary board
-void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
+void greenRedFlash(uint8_t numFlash = 4, uint8_t rate = 75) {
     for (uint8_t i = 0; i < numFlash; i++) {
         digitalWrite(greenLED, HIGH);
         digitalWrite(redLED, LOW);
@@ -248,7 +236,7 @@ void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
 // Reads the battery voltage
 // NOTE: This will actually return the battery level from the previous update!
 float getBatteryVoltage() {
-    if (mcuBoard.sensorValues[0] == -9999) mcuBoard.update();
+    if (mcuBoard.sensorValues[0] == MS_INVALID_VALUE) mcuBoard.update();
     return mcuBoard.sensorValues[0];
 }
 /** End [working_functions] */
@@ -284,13 +272,13 @@ void setup() {
     pinMode(redLED, OUTPUT);
     digitalWrite(redLED, LOW);
     // Blink the LEDs to show the board is on and starting up
-    greenredflash();
+    greenRedFlash();
 
     // Set the timezones for the logger/data and the RTC
     // Logging in the given time zone
     Logger::setLoggerTimeZone(timeZone);
     // It is STRONGLY RECOMMENDED that you set the RTC to be in UTC (UTC+0)
-    Logger::setRTCTimeZone(0);
+    loggerClock::setRTCOffset(0);
 
     // Attach the modem and information pins to the logger
     dataLogger.attachModem(modem);
@@ -301,8 +289,9 @@ void setup() {
     // Begin the variable array[s], logger[s], and publisher[s]
     varArray.begin(variableCount, variableList);
     dataLogger.begin(LoggerID, loggingInterval, &varArray);
-    TsMqtt.begin(dataLogger, &modem.gsmClient, thingSpeakMQTTKey,
-                 thingSpeakChannelID, thingSpeakChannelKey);
+    TsMqtt.begin(dataLogger, thingSpeakClientName, thingSpeakMQTTUser,
+                 thingSpeakMQTTPassword, thingSpeakChannelID);
+    TsMqtt.setRESTAPIKey(thingSpeakAPIKey);
 
     // Note:  Please change these battery voltages to match your battery
     // Set up the sensors, except at lowest battery level
@@ -312,24 +301,24 @@ void setup() {
     }
 
     // Sync the clock if it isn't valid or we have battery to spare
-    if (getBatteryVoltage() > 3.55 || !dataLogger.isRTCSane()) {
-        // Synchronize the RTC with NIST
-        // This will also set up the modem
-        dataLogger.syncRTC();
+    if (getBatteryVoltage() > 3.55 || !loggerClock::isRTCSane()) {
+        // Set up the modem, synchronize the RTC with NIST, and publish
+        // configuration information to rename the channel and fields.
+        dataLogger.makeInitialConnections();
     }
 
     // Create the log file, adding the default header to it
     // Do this last so we have the best chance of getting the time correct and
-    // all sensor names correct
-    // Writing to the SD card can be power intensive, so if we're skipping
-    // the sensor setup we'll skip this too.
+    // all sensor names correct.
+    // Writing to the SD card can be power intensive, so if we're skipping the
+    // sensor setup we'll skip this too.
     if (getBatteryVoltage() > 3.4) {
         Serial.println(F("Setting up file on SD card"));
-        dataLogger.turnOnSDcard(
-            true);  // true = wait for card to settle after power up
+        dataLogger.turnOnSDcard(true);
+        // true = wait for card to settle after power up
         dataLogger.createLogFile(true);  // true = write a new header
-        dataLogger.turnOffSDcard(
-            true);  // true = wait for internal housekeeping after write
+        dataLogger.turnOffSDcard(true);
+        // true = wait for internal housekeeping after write
     }
 
     // Call the processor sleep
@@ -360,3 +349,5 @@ void loop() {
     }
 }
 /** End [loop] */
+
+// cSpell: words TurbHigh TurbLow setRESTAPIKey

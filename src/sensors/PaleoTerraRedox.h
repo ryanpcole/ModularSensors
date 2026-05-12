@@ -5,9 +5,9 @@
  * This library is published under the BSD-3 license.
  * @author Anthony Aufdenkampe <aaufdenkampe@limno.com> with help from Beth
  * Fisher, Evan Host and Bobby Schulz.
- * Heavliy edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
+ * Heavily edited by Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
- * @brief Contains the PaleoTerraRedox semsor subclass and the variable subclass
+ * @brief Contains the PaleoTerraRedox sensor subclass and the variable subclass
  * PaleoTerraRedox_Voltage.
  *
  * These are for the PaleoTerra redox sensors.
@@ -15,11 +15,14 @@
  * This depends on Testato's
  * [SoftwareWire](https://github.com/Testato/SoftwareWire) library if software
  * I2C is needed.
+ *
+ * @note These sensors are no longer being produced, but this code is being
+ * maintained for users who have them in their monitoring kits.
  */
 /* clang-format off */
 /**
  * @defgroup sensor_pt_redox PaleoTerra Redox
- * Classes for the PaleoTerra Redox digital preassure sensor.
+ * Classes for the PaleoTerra Redox sensor.
  *
  * @ingroup the_sensors
  *
@@ -40,6 +43,12 @@
  * @section sensor_pt_redox_flags Build flags
  * - `-D MS_PALEOTERRA_SOFTWAREWIRE`
  *      - switches from using hardware I2C to software I2C
+ * - `PTR_MV_PER_LSB`
+ *      - ADC LSB to microvolts conversion factor (15.625 μV per LSB)
+ *      - Used to convert raw ADC values to voltage measurements
+ * - `MCP3421_ADR`
+ *      - Default I2C address of the PaleoTerra redox sensor (0x68)
+ *      - Can be overridden in constructor if sensor address is different
  * @warning Either all or none of your attached redox probes may use software I2C.
  * Using some with software I2C and others with hardware I2C is not supported.
  *
@@ -61,16 +70,23 @@
 #ifndef SRC_SENSORS_PALEOTERRAREDOX_H_
 #define SRC_SENSORS_PALEOTERRAREDOX_H_
 
-// Debugging Statement
-// #define MS_PALEOTERRAREDOX_DEBUG
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_PALEOTERRAREDOX_DEBUG
 #define MS_DEBUGGING_STD "PaleoTerraRedox"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "SensorBase.h"
 #include <Wire.h>
@@ -83,6 +99,23 @@
 /**@{*/
 
 /**
+ * @anchor sensor_pt_redox_config
+ * @name Configuration Defines
+ * Defines to set the address of the PaleoTerra redox sensor.
+ */
+/**@{*/
+/// @brief The default I2C address of the PaleoTerra redox sensor
+#ifndef MCP3421_ADR
+#define MCP3421_ADR 0x68
+#endif
+/// @brief ADC LSB to millivolts conversion factor (15.625 µV per LSB = 0.015625
+/// mV per LSB)
+#ifndef PTR_MV_PER_LSB
+#define PTR_MV_PER_LSB 0.015625f
+#endif
+/**@}*/
+
+/**
  * @anchor sensor_pt_redox_var_counts
  * @name Sensor Variable Counts
  * The number of variables that can be returned by PaleoTerra redox sensor
@@ -93,16 +126,6 @@
 #define PTR_NUM_VARIABLES 1
 /// @brief Sensor::_incCalcValues; we don't calculate any additional values.
 #define PTR_INC_CALC_VARIABLES 0
-/**@}*/
-
-/**
- * @anchor sensor_pt_redox_config
- * @name Configuration Defines
- * Defines to set the address of the PaleoTerra redox sensor.
- */
-/**@{*/
-/// @brief The default I2C address of the PaleoTerra redox sensor
-#define MCP3421_ADR 0x68
 /**@}*/
 
 /**
@@ -120,6 +143,8 @@
 /// @brief Sensor::_measurementTime_ms; the PaleoTerra redox sensor takes 67ms
 /// to complete a measurement.
 #define PTR_MEASUREMENT_TIME_MS 67
+/// @brief The time to wait after starting a conversion before data is ready.
+#define PTR_CONVERSION_WAIT_TIME_MS 300
 /**@}*/
 
 /**
@@ -128,10 +153,13 @@
  * The voltage variable from a PaleoTerra redox probe
  * - Accuracy is ±5mV
  *
+ * @todo Find and define minimum and maximum voltage measurement range from a
+ * PaleoTerra redox probe.
+ *
  * {{ @ref PaleoTerraRedox_Voltage::PaleoTerraRedox_Voltage }}
  */
 /**@{*/
-/** @brief Decimals places in string representation; voltage should have 2.
+/** @brief Decimal places in string representation; voltage should have 2.
  *
  * Resolution is 1mV and 1 extra digit is added to increase the number of
  * significant figures to allow for averaging of multiple measurements.
@@ -206,7 +234,7 @@ class PaleoTerraRedox : public Sensor {
                     uint8_t i2cAddressHex         = MCP3421_ADR,
                     uint8_t measurementsToAverage = 1);
 #endif
-#if !defined(MS_PALEOTERRA_SOFTWAREWIRE) | defined DOXYGEN
+#if !defined(MS_PALEOTERRA_SOFTWAREWIRE) || defined(DOXYGEN)
     /**
      * @brief Construct a new PaleoTerra Redox object using a secondary
      * *hardware* I2C instance.
@@ -245,7 +273,7 @@ class PaleoTerraRedox : public Sensor {
      * @brief Destroy the PaleoTerra Redox object.  Also destroy the software
      * I2C instance if one was created.
      */
-    ~PaleoTerraRedox();
+    ~PaleoTerraRedox() override;
 
     /**
      * @brief Do any one-time preparations needed before the sensor will be able
@@ -256,16 +284,11 @@ class PaleoTerraRedox : public Sensor {
      *
      * @return True if the setup was successful.
      */
-    bool setup(void) override;
-    /**
-     * @copydoc Sensor::getSensorLocation()
-     */
-    String getSensorLocation(void) override;
+    bool setup() override;
 
-    /**
-     * @copydoc Sensor::addSingleMeasurementResult()
-     */
-    bool addSingleMeasurementResult(void) override;
+    String getSensorLocation() override;
+
+    bool addSingleMeasurementResult() override;
 
  private:
     /**
@@ -314,23 +337,13 @@ class PaleoTerraRedox_Voltage : public Variable {
     explicit PaleoTerraRedox_Voltage(
         Sensor* parentSense, const char* uuid = "",
         const char* varCode = PTR_VOLTAGE_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)PTR_VOLTAGE_VAR_NUM,
-                   (uint8_t)PTR_VOLTAGE_RESOLUTION, PTR_VOLTAGE_VAR_NAME,
-                   PTR_VOLTAGE_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new PaleoTerraRedox_Voltage object.
-     *
-     * @note This must be tied with a parent PaleoTerraRedox before it can be
-     * used.
-     */
-    PaleoTerraRedox_Voltage()
-        : Variable((const uint8_t)PTR_VOLTAGE_VAR_NUM,
-                   (uint8_t)PTR_VOLTAGE_RESOLUTION, PTR_VOLTAGE_VAR_NAME,
-                   PTR_VOLTAGE_UNIT_NAME, PTR_VOLTAGE_DEFAULT_CODE) {}
+        : Variable(parentSense, PTR_VOLTAGE_VAR_NUM, PTR_VOLTAGE_RESOLUTION,
+                   PTR_VOLTAGE_VAR_NAME, PTR_VOLTAGE_UNIT_NAME, varCode, uuid) {
+    }
     /**
      * @brief Destroy the PaleoTerraRedox_Voltage object - no action needed.
      */
-    ~PaleoTerraRedox_Voltage() {}
+    ~PaleoTerraRedox_Voltage() override = default;
 };
 
 /**

@@ -6,7 +6,8 @@
  * @author Sara Geleskie Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the EverlightALSPT19 sensor subclass and the variable
- * subclasses EverlightALSPT19_Current and EverlightALSPT19_Illuminance.
+ * subclasses EverlightALSPT19_Voltage, EverlightALSPT19_Current, and
+ * EverlightALSPT19_Illuminance.
  *
  * These are used for the Everlight ALS-PT19 ambient light sensor.
  */
@@ -27,9 +28,14 @@
  * @section sensor_alspt19_datasheet Sensor Datasheet
  * [Datasheet](https://github.com/EnviroDIY/ModularSensors/wiki/Sensor-Datasheets/Everlight-ALS-PT19.pdf)
  *
+ * @section sensor_alspt19_config_flags Build flags
+ * - `-D ALSPT19_UA_PER_1000LUX=##`
+ *      - used to set current equivalent to 1000lux, which is used to calculate
+ *        lux from the sensor
+ *
  * @section sensor_alspt19_ctor Sensor Constructors
- * {{ @ref EverlightALSPT19::EverlightALSPT19(uint8_t) }}
- * {{ @ref EverlightALSPT19::EverlightALSPT19(int8_t, int8_t, float, float, uint8_t) }}
+ * {{ @ref EverlightALSPT19::EverlightALSPT19(uint8_t, AnalogVoltageReader*) }}
+ * {{ @ref EverlightALSPT19::EverlightALSPT19(int8_t, int8_t, float, float, uint8_t, AnalogVoltageReader*) }}
  *
  * @section sensor_alspt19_examples Example Code
  *
@@ -43,9 +49,13 @@
 #ifndef SRC_SENSORS_EVERLIGHTALSPT19_H_
 #define SRC_SENSORS_EVERLIGHTALSPT19_H_
 
-// Debugging Statement
-// #define MS_EVERLIGHTALSPT19_DEBUG
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_EVERLIGHTALSPT19_DEBUG
 #define MS_DEBUGGING_STD "EverlightALSPT19"
 #endif
@@ -53,15 +63,46 @@
 #define MS_DEBUGGING_DEEP "EverlightALSPT19"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
 #undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "SensorBase.h"
 
 /** @ingroup sensor_alspt19 */
 /**@{*/
+
+/**
+ * @anchor sensor_alspt19_config
+ * @name Configuration Defines
+ * Define for the ALS calibration between current and lux.
+ */
+/**@{*/
+#if !defined(ALSPT19_UA_PER_1000LUX) || defined(DOXYGEN)
+/**
+ * @brief The default current (in µA) that is equivalent to 1000 lux of
+ * illuminance.
+ *
+ * Extrapolating from plots in the sensor datasheet
+ * - Incandescent light: ~5,000µA for 10,000 lux (500 for 1000)
+ * - Fluorescent light: ~1,500µA for 10,000 lux (150 for 1000)
+ * - 6500K white LED: 150µA for 1000 Lux
+ *
+ * @attention The default of 200.0f has been used by this library, but I'm
+ * unclear the origin of this number.
+ *
+ * @todo Find the source of the calibration of typical 200µA current for 1000
+ * Lux, which doesn't appear to align with the datasheet.
+ */
+#define ALSPT19_UA_PER_1000LUX 200.0f
+#endif
+static_assert(ALSPT19_UA_PER_1000LUX > 0,
+              "Current-to-lux calibration factor must be positive");
+/**@}*/
 
 /**
  * @anchor sensor_alspt19_var_counts
@@ -76,98 +117,6 @@
 /// voltage and loading resistance and illuminance from the photocurrent.
 #define ALSPT19_INC_CALC_VARIABLES 2
 /**@}*/
-
-/**
- * @anchor sensor_alspt19_mayfly
- * @name Pin Definitions for the Mayfly
- * Specific pin definitions for the ALS-PT19 built in to the EnviroDIY Mayfly
- * v1.x
- */
-/**@{*/
-/// @brief The power pin for the ALS on the EnviroDIY Mayfly v1.x
-#define MAYFLY_ALS_POWER_PIN -1
-/// @brief The data pin for the ALS on the EnviroDIY Mayfly v1.x
-#define MAYFLY_ALS_DATA_PIN A4
-/// @brief The supply voltage for the ALS on the EnviroDIY Mayfly v1.x
-#define MAYFLY_ALS_SUPPLY_VOLTAGE 3.3
-/// @brief The loading resistance for the ALS on the EnviroDIY Mayfly v1.x
-#define MAYFLY_ALS_LOADING_RESISTANCE 10
-/**@}*/
-
-/**
- * @anchor sensor_alspt19_config
- * @name Configuration Defines
- * Defines to help configure the range and resolution of the ALS-PT119 depending
- * on the processor and ADC in use.
- */
-/**@{*/
-#if !defined(ALSPT19_ADC_RESOLUTION) || defined(DOXYGEN)
-/**
- * @brief Default resolution (in bits) of the voltage measurement
- *
- * The default for all boards is 10, use a build flag to change this, if
- * necessary.
- */
-#define ALSPT19_ADC_RESOLUTION 10
-#endif  // ALSPT19_ADC_RESOLUTION
-/// @brief The maximum possible value of the ADC - one less than the resolution
-/// shifted up one bit.
-#define ALSPT19_ADC_MAX ((1 << ALSPT19_ADC_RESOLUTION) - 1)
-/// @brief The maximum possible range of the ADC - the resolution shifted up one
-/// bit.
-#define ALSPT19_ADC_RANGE (1 << ALSPT19_ADC_RESOLUTION)
-
-/* clang-format off */
-#if ! defined (ALSPT19_ADC_REFERENCE_MODE) || defined (DOXYGEN)
-#if defined(ARDUINO_ARCH_AVR) || defined (DOXYGEN)
-/**
- * @brief The voltage reference mode for the processor's ADC.
- *
- * For an AVR board, this must be one of:
- * - `DEFAULT`: the default built-in analog reference of 5 volts (on 5V Arduino
- * boards) or 3.3 volts (on 3.3V Arduino boards)
- * - `INTERNAL`: a built-in reference, equal to 1.1 volts on the ATmega168 or
- * ATmega328P and 2.56 volts on the ATmega32U4 and ATmega8 (not available on the
- * Arduino Mega)
- * - `INTERNAL1V1`: a built-in 1.1V reference (Arduino Mega only)
- * - `INTERNAL2V56`: a built-in 2.56V reference (Arduino Mega only)
- * - `EXTERNAL`: the voltage applied to the AREF pin (0 to 5V only) is used as the
- * reference.
- *
- * If not set on an AVR board `DEFAULT` is used.
- *
- * For the best accuracy, use an `EXTERNAL` reference with the AREF pin
- * connected to the power supply for the EC sensor.
- */
-#define ALSPT19_ADC_REFERENCE_MODE DEFAULT
-#endif
-#if defined(ARDUINO_ARCH_SAMD) || defined (DOXYGEN)
-/**
- * @brief The voltage reference mode for the processor's ADC.
- *
- * For a SAMD board, this must be one of:
- * - `AR_DEFAULT`: the default built-in analog reference of 3.3V
- * - `AR_INTERNAL`: a built-in 2.23V reference
- * - `AR_INTERNAL1V0`: a built-in 1.0V reference
- * - `AR_INTERNAL1V65`: a built-in 1.65V reference
- * - `AR_INTERNAL2V23`: a built-in 2.23V reference
- * - `AR_EXTERNAL`: the voltage applied to the AREF pin is used as the reference
- *
- * If not set on an SAMD board `AR_DEFAULT` is used.
- *
- * For the best accuracy, use an `EXTERNAL` reference with the AREF pin
- * connected to the power supply for the EC sensor.
- *
- * @see https://www.arduino.cc/reference/en/language/functions/analog-io/analogreference/
- */
-#define ALSPT19_ADC_REFERENCE_MODE AR_DEFAULT
-#endif
-#if ! defined (ALSPT19_ADC_REFERENCE_MODE)
-#error The processor ADC reference type must be defined!
-#endif  // ALSPT19_ADC_REFERENCE_MODE
-#endif  // ARDUINO_ARCH_SAMD
-/**@}*/
-/* clang-format on */
 
 /**
  * @anchor sensor_alspt19_timing
@@ -196,8 +145,12 @@
  * {{ @ref EverlightALSPT19_Voltage::EverlightALSPT19_Voltage }}
  */
 /**@{*/
+/// @brief Minimum voltage in volts.
+#define ALSPT19_VOLTAGE_MIN_V 0.0
+/// @brief Maximum voltage in volts.
+#define ALSPT19_VOLTAGE_MAX_V 4.6
 /**
- * @brief Decimals places in string representation; voltage should have 0
+ * @brief Decimal places in string representation; voltage should have 0
  *
  * The true resolution depends on the ADC, the supply voltage, and the loading
  * resistor, but for simplicity we will use 3, which is an appropriate value for
@@ -227,8 +180,12 @@
  * {{ @ref EverlightALSPT19_Current::EverlightALSPT19_Current }}
  */
 /**@{*/
+/// @brief Minimum electric current in microamperes.
+#define ALSPT19_CURRENT_MIN_UA 5.0
+/// @brief Maximum electric current in microamperes.
+#define ALSPT19_CURRENT_MAX_UA 520.0
 /**
- * @brief Decimals places in string representation; voltage should have 0
+ * @brief Decimal places in string representation; voltage should have 0
  *
  * The true resolution depends on the ADC, the supply voltage, and the loading
  * resistor, but for simplicity we will use 0 as this is not a high precision
@@ -258,8 +215,12 @@
  * {{ @ref EverlightALSPT19_Illuminance::EverlightALSPT19_Illuminance }}
  */
 /**@{*/
+/// @brief Minimum illuminance in lux.
+#define ALSPT19_ILLUMINANCE_MIN_LUX 0.0
+/// @brief Maximum illuminance in lux.
+#define ALSPT19_ILLUMINANCE_MAX_LUX 10000.0
 /**
- * @brief Decimals places in string representation; illuminance should have 0
+ * @brief Decimal places in string representation; illuminance should have 0
  *
  * The true resolution depends on the ADC, the supply voltage, the loading
  * resistor, and the light source, but for simplicity we will use 0 as this is
@@ -280,6 +241,8 @@
 #define ALSPT19_ILLUMINANCE_DEFAULT_CODE "ALSPT19Lux"
 /**@}*/
 
+// Forward declaration
+class AnalogVoltageReader;
 
 /* clang-format off */
 /**
@@ -298,18 +261,33 @@ class EverlightALSPT19 : public Sensor {
      * @param dataPin The processor ADC port pin to read the voltage from the EC
      * probe.  Not all processor pins can be used as analog pins.  Those usable
      * as analog pins generally are numbered with an "A" in front of the number
-     * - ie, A1.
-     * @param supplyVoltage The power supply voltage (in volts) of the ALS-PT19.
-     * @param loadResistor The size of the loading resistor, in kilaohms (kΩ).
+     * - i.e., A1.
+     * @param alsSupplyVoltage The power supply voltage (in volts) of the
+     * ALS-PT19. This does not have to be the same as the board operating
+     * voltage or the supply voltage of the AnalogVoltageReader reader.
+     * This is used to clamp the light values when the sensor is over-saturated.
+     * @param loadResistor The size of the loading resistor, in kiloohms (kΩ).
      * @param measurementsToAverage The number of measurements to take and
      * average before giving a "final" result from the sensor; optional with a
      * default value of 10.
+     * @param analogVoltageReader Pointer to an AnalogVoltageReader object for
+     * voltage measurements.  Pass nullptr (the default) to have the constructor
+     * internally create and own an analog voltage reader.  For backward
+     * compatibility, the default reader uses the processor's internal ADC. If a
+     * non-null pointer is supplied, the caller retains ownership and must
+     * ensure its lifetime exceeds that of this object.
      */
-    EverlightALSPT19(int8_t powerPin, int8_t dataPin, float supplyVoltage,
-                     float loadResistor, uint8_t measurementsToAverage = 10);
+    EverlightALSPT19(int8_t powerPin, int8_t dataPin, float alsSupplyVoltage,
+                     float loadResistor, uint8_t measurementsToAverage = 10,
+                     AnalogVoltageReader* analogVoltageReader = nullptr);
+
+#if (defined(BUILT_IN_ALS_POWER_PIN) && defined(BUILT_IN_ALS_DATA_PIN) && \
+     defined(BUILT_IN_ALS_SUPPLY_VOLTAGE) &&                              \
+     defined(BUILT_IN_ALS_LOADING_RESISTANCE)) ||                         \
+    defined(DOXYGEN)
     /**
      * @brief Construct a new EverlightALSPT19 object with pins and resistors
-     * for the EnviroDIY Mayfly 1.x.
+     * for boards with a built-in ALS-PT19 configured in KnownProcessors.h.
      *
      * This is a short-cut constructor to help users of our own board so they
      * can change the number of readings without changing other arguments or
@@ -318,27 +296,50 @@ class EverlightALSPT19 : public Sensor {
      * @param measurementsToAverage The number of measurements to take and
      * average before giving a "final" result from the sensor; optional with a
      * default value of 10.
+     * @param analogVoltageReader Pointer to an AnalogVoltageReader object for
+     * voltage measurements.  Pass nullptr (the default) to have the constructor
+     * internally create and own an analog voltage reader.  For backward
+     * compatibility, the default reader uses the processor's internal ADC. If a
+     * non-null pointer is supplied, the caller retains ownership and must
+     * ensure its lifetime exceeds that of this object.
      */
-    explicit EverlightALSPT19(uint8_t measurementsToAverage = 10);
+    explicit EverlightALSPT19(
+        uint8_t              measurementsToAverage = 10,
+        AnalogVoltageReader* analogVoltageReader   = nullptr);
+#endif
     /**
-     * @brief Destroy the EverlightALSPT19 object - no action needed.
+     * @brief Destroy the EverlightALSPT19 object.
+     *
+     * Conditionally deletes the _analogVoltageReader member if the ownership
+     * flag _ownsAnalogVoltageReader is true, otherwise leaves it unmodified.
      */
-    ~EverlightALSPT19();
+    ~EverlightALSPT19() override;
 
-    /**
-     * @copydoc Sensor::addSingleMeasurementResult()
-     */
-    bool addSingleMeasurementResult(void) override;
+    // Delete copy constructor and copy assignment operator to prevent shallow
+    // copies
+    EverlightALSPT19(const EverlightALSPT19&)            = delete;
+    EverlightALSPT19& operator=(const EverlightALSPT19&) = delete;
+
+    // Delete move constructor and move assignment operator
+    EverlightALSPT19(EverlightALSPT19&&)            = delete;
+    EverlightALSPT19& operator=(EverlightALSPT19&&) = delete;
+
+    String getSensorLocation() override;
+
+    bool setup() override;
+
+    bool addSingleMeasurementResult() override;
 
  private:
-    /**
-     * @brief The power supply voltage
-     */
-    float _supplyVoltage;
-    /**
-     * @brief The loading resistance
-     */
-    float _loadResistor;
+    /// @brief The PT-19 power supply voltage
+    float _alsSupplyVoltage = 0.0f;
+    /// @brief The loading resistance
+    float _loadResistor = 0.0f;
+    /// @brief Pointer to analog voltage reader
+    AnalogVoltageReader* _analogVoltageReader = nullptr;
+    /// @brief Flag to track if this object owns the analog voltage reader and
+    /// should delete it in the destructor
+    bool _ownsAnalogVoltageReader = false;
 };
 
 
@@ -364,25 +365,13 @@ class EverlightALSPT19_Voltage : public Variable {
     explicit EverlightALSPT19_Voltage(
         EverlightALSPT19* parentSense, const char* uuid = "",
         const char* varCode = ALSPT19_VOLTAGE_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ALSPT19_VOLTAGE_VAR_NUM,
-                   (uint8_t)ALSPT19_VOLTAGE_RESOLUTION,
-                   ALSPT19_VOLTAGE_VAR_NAME, ALSPT19_VOLTAGE_UNIT_NAME, varCode,
-                   uuid) {}
-    /**
-     * @brief Construct a new EverlightALSPT19_Voltage object.
-     *
-     * @note This must be tied with a parent EverlightALSPT19 before it can be
-     * used.
-     */
-    EverlightALSPT19_Voltage()
-        : Variable((const uint8_t)ALSPT19_VOLTAGE_VAR_NUM,
-                   (uint8_t)ALSPT19_VOLTAGE_RESOLUTION,
-                   ALSPT19_VOLTAGE_VAR_NAME, ALSPT19_VOLTAGE_UNIT_NAME,
-                   ALSPT19_VOLTAGE_DEFAULT_CODE) {}
+        : Variable(parentSense, ALSPT19_VOLTAGE_VAR_NUM,
+                   ALSPT19_VOLTAGE_RESOLUTION, ALSPT19_VOLTAGE_VAR_NAME,
+                   ALSPT19_VOLTAGE_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the EverlightALSPT19_Voltage object - no action needed.
      */
-    ~EverlightALSPT19_Voltage() {}
+    ~EverlightALSPT19_Voltage() override = default;
 };
 
 
@@ -408,25 +397,13 @@ class EverlightALSPT19_Current : public Variable {
     explicit EverlightALSPT19_Current(
         EverlightALSPT19* parentSense, const char* uuid = "",
         const char* varCode = ALSPT19_CURRENT_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ALSPT19_CURRENT_VAR_NUM,
-                   (uint8_t)ALSPT19_CURRENT_RESOLUTION,
-                   ALSPT19_CURRENT_VAR_NAME, ALSPT19_CURRENT_UNIT_NAME, varCode,
-                   uuid) {}
-    /**
-     * @brief Construct a new EverlightALSPT19_Current object.
-     *
-     * @note This must be tied with a parent EverlightALSPT19 before it can be
-     * used.
-     */
-    EverlightALSPT19_Current()
-        : Variable((const uint8_t)ALSPT19_CURRENT_VAR_NUM,
-                   (uint8_t)ALSPT19_CURRENT_RESOLUTION,
-                   ALSPT19_CURRENT_VAR_NAME, ALSPT19_CURRENT_UNIT_NAME,
-                   ALSPT19_CURRENT_DEFAULT_CODE) {}
+        : Variable(parentSense, ALSPT19_CURRENT_VAR_NUM,
+                   ALSPT19_CURRENT_RESOLUTION, ALSPT19_CURRENT_VAR_NAME,
+                   ALSPT19_CURRENT_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the EverlightALSPT19_Current object - no action needed.
      */
-    ~EverlightALSPT19_Current() {}
+    ~EverlightALSPT19_Current() override = default;
 };
 
 
@@ -452,26 +429,16 @@ class EverlightALSPT19_Illuminance : public Variable {
     explicit EverlightALSPT19_Illuminance(
         EverlightALSPT19* parentSense, const char* uuid = "",
         const char* varCode = ALSPT19_ILLUMINANCE_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ALSPT19_ILLUMINANCE_VAR_NUM,
-                   (uint8_t)ALSPT19_ILLUMINANCE_RESOLUTION,
-                   ALSPT19_ILLUMINANCE_VAR_NAME, ALSPT19_ILLUMINANCE_UNIT_NAME,
-                   varCode, uuid) {}
-    /**
-     * @brief Construct a new EverlightALSPT19_Illuminance object.
-     *
-     * @note This must be tied with a parent EverlightALSPT19 before it can be
-     * used.
-     */
-    EverlightALSPT19_Illuminance()
-        : Variable((const uint8_t)ALSPT19_ILLUMINANCE_VAR_NUM,
-                   (uint8_t)ALSPT19_ILLUMINANCE_RESOLUTION,
-                   ALSPT19_ILLUMINANCE_VAR_NAME, ALSPT19_ILLUMINANCE_UNIT_NAME,
-                   ALSPT19_ILLUMINANCE_DEFAULT_CODE) {}
+        : Variable(parentSense, ALSPT19_ILLUMINANCE_VAR_NUM,
+                   ALSPT19_ILLUMINANCE_RESOLUTION, ALSPT19_ILLUMINANCE_VAR_NAME,
+                   ALSPT19_ILLUMINANCE_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the EverlightALSPT19_Illuminance object - no action
      * needed.
      */
-    ~EverlightALSPT19_Illuminance() {}
+    ~EverlightALSPT19_Illuminance() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_EVERLIGHTALSPT19_H_
+
+// cSpell:words microamperes

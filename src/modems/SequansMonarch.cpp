@@ -20,19 +20,16 @@ SequansMonarch::SequansMonarch(Stream* modemStream, int8_t powerPin,
                   VZM20Q_RESET_LEVEL, VZM20Q_RESET_PULSE_MS, modemSleepRqPin,
                   VZM20Q_WAKE_LEVEL, VZM20Q_WAKE_PULSE_MS,
                   VZM20Q_STATUS_TIME_MS, VZM20Q_DISCONNECT_TIME_MS,
-                  VZM20Q_WAKE_DELAY_MS, VZM20Q_ATRESPONSE_TIME_MS),
+                  VZM20Q_WAKE_DELAY_MS, VZM20Q_AT_RESPONSE_TIME_MS),
 #ifdef MS_SEQUANSMONARCH_DEBUG_DEEP
-      _modemATDebugger(*modemStream, DEEP_DEBUGGING_SERIAL_OUTPUT),
+      _modemATDebugger(*modemStream, MS_SERIAL_OUTPUT),
       gsmModem(_modemATDebugger),
 #else
       gsmModem(*modemStream),
 #endif
-      gsmClient(gsmModem),
       _apn(apn) {
 }
 
-// Destructor
-SequansMonarch::~SequansMonarch() {}
 
 MS_IS_MODEM_AWAKE(SequansMonarch);
 MS_MODEM_WAKE(SequansMonarch);
@@ -41,7 +38,12 @@ MS_MODEM_CONNECT_INTERNET(SequansMonarch);
 MS_MODEM_DISCONNECT_INTERNET(SequansMonarch);
 MS_MODEM_IS_INTERNET_AVAILABLE(SequansMonarch);
 
-MS_MODEM_GET_NIST_TIME(SequansMonarch);
+MS_MODEM_CREATE_CLIENT(SequansMonarch, SequansMonarch);
+MS_MODEM_DELETE_CLIENT(SequansMonarch, SequansMonarch);
+MS_MODEM_CREATE_SECURE_CLIENT(SequansMonarch, SequansMonarch);
+MS_MODEM_DELETE_SECURE_CLIENT(SequansMonarch, SequansMonarch);
+
+MS_MODEM_GET_NIST_TIME(SequansMonarch, SequansMonarch);
 
 MS_MODEM_GET_MODEM_SIGNAL_QUALITY(SequansMonarch);
 MS_MODEM_GET_MODEM_BATTERY_DATA(SequansMonarch);
@@ -49,7 +51,7 @@ MS_MODEM_GET_MODEM_TEMPERATURE_DATA(SequansMonarch);
 
 // Create the wake and sleep methods for the modem
 // These can be functions of any type and must return a boolean
-bool SequansMonarch::modemWakeFxn(void) {
+bool SequansMonarch::modemWakeFxn() {
     // Module turns on when power is applied
     // No pulsing required in this case
     if (_powerPin >= 0) {
@@ -86,7 +88,7 @@ bool SequansMonarch::modemWakeFxn(void) {
 }
 
 
-bool SequansMonarch::modemSleepFxn(void) {
+bool SequansMonarch::modemSleepFxn() {
     if (_powerPin >= 0 || _modemResetPin >= 0) {
         // Module will go on with power on
         // Easiest to just go to sleep with the AT command rather than using
@@ -100,6 +102,7 @@ bool SequansMonarch::modemSleepFxn(void) {
         if (_modemSleepRqPin >= 0) {
             digitalWrite(_modemSleepRqPin, !_wakeLevel);
         }
+        gsmModem.stream.flush();
         return retVal;
     } else if (_modemSleepRqPin >= 0) {
         // RTS for power save mode
@@ -114,15 +117,14 @@ bool SequansMonarch::modemSleepFxn(void) {
 }
 
 
-bool SequansMonarch::extraModemSetup(void) {
+bool SequansMonarch::extraModemSetup() {
     bool success = gsmModem.init();
-    gsmClient.init(&gsmModem);
-    _modemName = gsmModem.getModemName();
+    _modemName   = gsmModem.getModemName();
     // Turn on the LED
     gsmModem.sendAT(GF("+SQNLED=1"));
     success &= static_cast<bool>(gsmModem.waitResponse());
     // Enable power save mode if we're not going to cut power or use reset
-    if (!(_powerPin >= 0) && !(_modemResetPin >= 0) && _modemSleepRqPin >= 0) {
+    if (_powerPin < 0 && _modemResetPin < 0 && _modemSleepRqPin >= 0) {
         MS_DBG(
             "Enabling power save mode tracking area update [PSM TAU] timers");
         // Requested Periodic TAU (Time in between Tracking Area Updates) = 101
@@ -149,3 +151,5 @@ bool SequansMonarch::extraModemSetup(void) {
 
     return success;
 }
+
+// cSpell:ignore SQNLED CPSMS CFUN SQNAUTOCONNECT sqnmm SQNAUTOINTERNET

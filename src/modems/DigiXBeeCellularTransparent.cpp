@@ -21,19 +21,15 @@ DigiXBeeCellularTransparent::DigiXBeeCellularTransparent(
     : DigiXBee(powerPin, statusPin, useCTSStatus, modemResetPin,
                modemSleepRqPin),
 #ifdef MS_DIGIXBEECELLULARTRANSPARENT_DEBUG_DEEP
-      _modemATDebugger(*modemStream, DEEP_DEBUGGING_SERIAL_OUTPUT),
+      _modemATDebugger(*modemStream, MS_SERIAL_OUTPUT),
       gsmModem(_modemATDebugger, modemResetPin),
 #else
       gsmModem(*modemStream, modemResetPin),
 #endif
-      gsmClient(gsmModem),
       _apn(apn),
       _user(user),
       _pwd(pwd) {
 }
-
-// Destructor
-DigiXBeeCellularTransparent::~DigiXBeeCellularTransparent() {}
 
 MS_IS_MODEM_AWAKE(DigiXBeeCellularTransparent);
 MS_MODEM_WAKE(DigiXBeeCellularTransparent);
@@ -42,12 +38,17 @@ MS_MODEM_CONNECT_INTERNET(DigiXBeeCellularTransparent);
 MS_MODEM_DISCONNECT_INTERNET(DigiXBeeCellularTransparent);
 MS_MODEM_IS_INTERNET_AVAILABLE(DigiXBeeCellularTransparent);
 
+MS_MODEM_CREATE_CLIENT(DigiXBeeCellularTransparent, XBee);
+MS_MODEM_DELETE_CLIENT(DigiXBeeCellularTransparent, XBee);
+MS_MODEM_CREATE_SECURE_CLIENT(DigiXBeeCellularTransparent, XBee);
+MS_MODEM_DELETE_SECURE_CLIENT(DigiXBeeCellularTransparent, XBee);
+
 MS_MODEM_GET_MODEM_SIGNAL_QUALITY(DigiXBeeCellularTransparent);
 MS_MODEM_GET_MODEM_BATTERY_DATA(DigiXBeeCellularTransparent);
 MS_MODEM_GET_MODEM_TEMPERATURE_DATA(DigiXBeeCellularTransparent);
 
 // We turn off airplane mode in the wake.
-bool DigiXBeeCellularTransparent::modemWakeFxn(void) {
+bool DigiXBeeCellularTransparent::modemWakeFxn() {
     if (_modemSleepRqPin >= 0) {
         // Don't go to sleep if there's not a wake pin!
         MS_DBG(F("Setting pin"), _modemSleepRqPin,
@@ -70,7 +71,7 @@ bool DigiXBeeCellularTransparent::modemWakeFxn(void) {
 
 
 // We turn on airplane mode in before sleep
-bool DigiXBeeCellularTransparent::modemSleepFxn(void) {
+bool DigiXBeeCellularTransparent::modemSleepFxn() {
     if (_modemSleepRqPin >= 0) {
         MS_DBG(F("Turning on airplane mode..."));
         if (gsmModem.commandMode()) {
@@ -85,19 +86,20 @@ bool DigiXBeeCellularTransparent::modemSleepFxn(void) {
                !_wakeLevel ? F("HIGH") : F("LOW"), F("to put"), _modemName,
                F("to sleep"));
         digitalWrite(_modemSleepRqPin, !_wakeLevel);
+        gsmModem.stream.flush();
         return true;
     } else {
+        gsmModem.stream.flush();
         return true;
     }
 }
 
 
-bool DigiXBeeCellularTransparent::extraModemSetup(void) {
+bool DigiXBeeCellularTransparent::extraModemSetup() {
     bool success = true;
     /** First run the TinyGSM init() function for the XBee. */
     MS_DBG(F("Initializing the XBee..."));
     success &= gsmModem.init();
-    gsmClient.init(&gsmModem);
     _modemName = gsmModem.getModemName();
     /** Then enter command mode to set pin outputs. */
     MS_DBG(F("Putting XBee into command mode..."));
@@ -190,7 +192,7 @@ bool DigiXBeeCellularTransparent::extraModemSetup(void) {
     return success;
 }
 
-uint32_t DigiXBeeCellularTransparent::getNISTTime(void) {
+uint32_t DigiXBeeCellularTransparent::getNISTTime() {
     /* bail if not connected to the internet */
     if (!isInternetAvailable()) {
         MS_DBG(F("No internet connection, cannot connect to NIST."));
@@ -213,7 +215,9 @@ uint32_t DigiXBeeCellularTransparent::getNISTTime(void) {
 
         /* This is the IP address of time-e-wwv.nist.gov  */
         /* XBee's address lookup falters on time.nist.gov */
-        IPAddress ip(132, 163, 97, 6);
+        IPAddress                  ip(132, 163, 97, 6);
+        TinyGsmXBee::GsmClientXBee gsmClient(
+            gsmModem); /*create client, default mux*/
         connectionMade = gsmClient.connect(ip, 37, 15);
         /* Wait again so NIST doesn't refuse us! */
         delay(4000L);
@@ -233,7 +237,12 @@ uint32_t DigiXBeeCellularTransparent::getNISTTime(void) {
                 byte response[4] = {0};
                 gsmClient.read(response, 4);
                 gsmClient.stop();
-                return parseNISTBytes(response);
+                uint32_t nistParsed = parseNISTBytes(response);
+                if (nistParsed != 0) {
+                    return nistParsed;
+                } else {
+                    MS_DBG(F("NIST response was invalid!"));
+                }
             } else {
                 MS_DBG(F("NIST Time server did not respond!"));
                 gsmClient.stop();
@@ -246,19 +255,16 @@ uint32_t DigiXBeeCellularTransparent::getNISTTime(void) {
 }
 
 
-bool DigiXBeeCellularTransparent::updateModemMetadata(void) {
-    bool success = true;
-
+bool DigiXBeeCellularTransparent::updateModemMetadata() {
     // Unset whatever we had previously
-    loggerModem::_priorRSSI           = -9999;
-    loggerModem::_priorSignalPercent  = -9999;
-    loggerModem::_priorBatteryState   = -9999;
-    loggerModem::_priorBatteryPercent = -9999;
-    loggerModem::_priorBatteryPercent = -9999;
-    loggerModem::_priorModemTemp      = -9999;
-
+    loggerModem::_priorRSSI           = MS_INVALID_VALUE;
+    loggerModem::_priorSignalPercent  = MS_INVALID_VALUE;
+    loggerModem::_priorBatteryState   = MS_INVALID_VALUE;
+    loggerModem::_priorBatteryPercent = MS_INVALID_VALUE;
+    loggerModem::_priorBatteryVoltage = MS_INVALID_VALUE;
+    loggerModem::_priorModemTemp      = MS_INVALID_VALUE;
     // Initialize variable
-    int16_t signalQual = -9999;
+    int16_t signalQual = MS_INVALID_VALUE;
 
     MS_DBG(F("Modem polling settings:"), String(_pollModemMetaData, BIN));
 
@@ -287,10 +293,10 @@ bool DigiXBeeCellularTransparent::updateModemMetadata(void) {
             MS_DBG(F("Getting signal quality:"));
             signalQual = gsmModem.getSignalQuality();
             MS_DBG(F("Raw signal quality:"), signalQual);
-            if (signalQual != 0 && signalQual != -9999) break;
+            if (signalQual != 0 && signalQual != MS_INVALID_VALUE) break;
             delay(250);
-        } while ((signalQual == 0 || signalQual == -9999) &&
-                 millis() - startMillis < 15000L && success);
+        } while ((signalQual == 0 || signalQual == MS_INVALID_VALUE) &&
+                 millis() - startMillis < 15000L);
 
         // Convert signal quality to RSSI
         loggerModem::_priorRSSI = signalQual;
@@ -315,5 +321,5 @@ bool DigiXBeeCellularTransparent::updateModemMetadata(void) {
     MS_DBG(F("Leaving Command Mode after updating modem metadata:"));
     gsmModem.exitCommand();
 
-    return success;
+    return true;
 }

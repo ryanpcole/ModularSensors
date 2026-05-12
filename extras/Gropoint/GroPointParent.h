@@ -1,5 +1,5 @@
 /**
- * @file GroPointParent.cpp
+ * @file GroPointParent.h
  * @copyright Stroud Water Research Center
  * Part of the EnviroDIY ModularSensors library for Arduino.
  * This library is published under the BSD-3 license.
@@ -35,7 +35,7 @@
  * They communicate via [Modbus RTU](https://en.wikipedia.org/wiki/Modbus) over [RS-485](https://en.wikipedia.org/wiki/RS-485).
  * To interface with them, you will need an RS485-to-TTL adapter.
  *
- * The sensor constructor requires as input: the sensor modbus address, a stream instance for data (ie, ```Serial```), and one or two power pins.
+ * The sensor constructor requires as input: the sensor modbus address, a stream instance for data (i.e., ```Serial```), and one or two power pins.
  * The Arduino pin controlling the receive and data enable on your RS485-to-TTL adapter and the number of readings to average are optional.
  * (Use -1 for the second power pin and -1 for the enable pin if these don't apply and you want to average more than one reading.)
  * Please see the section "[Notes on Arduino Streams and Software Serial](@ref page_arduino_streams)"
@@ -44,9 +44,6 @@
  * AltSoftSerial and HardwareSerial work fine.
  * Up to two power pins are provided so that the RS485 adapter, the sensor and/or an external power relay can be controlled separately.
  * If the power to everything is controlled by the same pin, use -1 for the second power pin or omit the argument.
- * If they are controlled by different pins _and no other sensors are dependent on power from either pin_ then the order of the pins doesn't matter.
- * If the RS485 adapter, sensor, or relay are controlled by different pins _and any other sensors are controlled by the same pins_ you should put the shared pin first and the un-shared pin second.
- * Both pins _cannot_ be shared pins.
  *
  * By default, this library cuts power to the sensors between readings, causing them to lose track of their brushing interval.
  * The library manually activates the brushes as part of the "wake" command.
@@ -61,22 +58,27 @@
 #ifndef SRC_SENSORS_GROPOINTPARENT_H_
 #define SRC_SENSORS_GROPOINTPARENT_H_
 
-// Debugging Statement
-// #define MS_GROPOINTPARENT_DEBUG
-// #define MS_GROPOINTPARENT_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_GROPOINTPARENT_DEBUG
 #define MS_DEBUGGING_STD "GroPointParent"
 #endif
-
 #ifdef MS_GROPOINTPARENT_DEBUG_DEEP
 #define MS_DEBUGGING_DEEP "GroPointParent"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
 #undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "SensorBase.h"
 #include "GroPointModbus.h"
@@ -149,12 +151,9 @@ class GroPointParent : public Sensor {
     /**
      * @brief Destroy the GroPoint Parent object - no action taken
      */
-    virtual ~GroPointParent();
+    ~GroPointParent() override = default;
 
-    /**
-     * @copydoc Sensor::getSensorLocation()
-     */
-    String getSensorLocation(void) override;
+    String getSensorLocation() override;
 
     /**
      * @brief Do any one-time preparations needed before the sensor will be able
@@ -167,37 +166,18 @@ class GroPointParent : public Sensor {
      *
      * @return True if the setup was successful.
      */
-    bool setup(void) override;
-    /**
-     * @brief Wake the sensor up, if necessary.  Do whatever it takes to get a
-     * sensor in the proper state to begin a measurement.
-     *
-     * Verifies that the power is on and updates the #_sensorStatus.  This also
-     * sets the #_millisSensorActivated timestamp.
-     *
-     * @note This does NOT include any wait for sensor readiness.
-     *
-     * @return True if the wake function completed successfully.
-     */
-    bool wake(void) override;
-    /**
-     * @brief Puts the sensor to sleep, if necessary.
-     *
-     * This also un-sets the #_millisSensorActivated timestamp (sets it to 0).
-     * This does NOT power down the sensor!
-     *
-     * @return True if the sleep function completed successfully.
-     */
-    bool sleep(void) override;
-
-    // Override these to use two power pins
-    void powerUp(void) override;
-    void powerDown(void) override;
+    bool setup() override;
 
     /**
-     * @copydoc Sensor::addSingleMeasurementResult()
+     * @brief Wake up the sensor and manually activate the brushes.
+     *
+     * @return True if the sensor wake and brush activation succeeded, false
+     * if activation failed after retries.
      */
-    bool addSingleMeasurementResult(void) override;
+    bool wake() override;
+    bool sleep() override;
+
+    bool addSingleMeasurementResult() override;
 
  private:
     /**
@@ -214,7 +194,7 @@ class GroPointParent : public Sensor {
      */
     byte _modbusAddress;
     /**
-     * @brief Private reference to the stream for communciation with the
+     * @brief Private reference to the stream for communication with the
      * GroPoint sensor.
      */
     Stream* _stream;
@@ -223,10 +203,8 @@ class GroPointParent : public Sensor {
      * pin.
      */
     int8_t _RS485EnablePin;
-    /**
-     * @brief Private reference to the power pin fro the RS-485 adapter.
-     */
-    int8_t _powerPin2;
 };
 
 #endif  // SRC_SENSORS_GROPOINTPARENT_H_
+
+// cSpell:words GPLPX gsensor

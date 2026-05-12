@@ -59,7 +59,7 @@
 /**
  * @anchor sensor_y513_var_counts
  * @name Sensor Variable Counts
- * The number of variables that can be returned by a Yosemitch Y514
+ * The number of variables that can be returned by a Yosemitech Y514
  */
 /**@{*/
 /// @brief Sensor::_numReturnedValues; the Y513 can report 2 values.
@@ -71,7 +71,7 @@
 /**
  * @anchor sensor_y513_timing
  * @name Sensor Timing
- * The sensor timing for a Yosemitch Y513
+ * The sensor timing for a Yosemitech Y513
  */
 /**@{*/
 /// @brief Sensor::_warmUpTime_ms; time before sensor responds after power - 1.3
@@ -88,14 +88,18 @@
 /**
  * @anchor sensor_y513_bga
  * @name Chlorophyll Concentration
- * The blue green algae concentration variable from a Yosemitch Y513
+ * The blue green algae concentration variable from a Yosemitech Y513
  * - Range is 0 to 400 µg/L or 0 to 100 RFU
  * - Accuracy is ± 1 %
  *
  * {{ @ref YosemitechY513_BGA::YosemitechY513_BGA }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; blue green algae
+/// @brief Minimum BGA concentration; 0 µg/L
+#define Y513_BGA_MIN_UGPL 0
+/// @brief Maximum BGA concentration; 400 µg/L
+#define Y513_BGA_MAX_UGPL 400
+/// @brief Decimal places in string representation; blue green algae
 /// concentration should have 1 - resolution is 0.1 µg/L / 0.1 RFU.
 #define Y513_BGA_RESOLUTION 1
 /// @brief Sensor variable number; blue green algae concentration is stored in
@@ -116,14 +120,18 @@
 /**
  * @anchor sensor_y513_temp
  * @name Temperature
- * The temperature variable from a Yosemitch Y513
+ * The temperature variable from a Yosemitech Y513
  * - Range is 0°C to + 50°C
  * - Accuracy is ± 0.2°C
  *
  * {{ @ref YosemitechY513_Temp::YosemitechY513_Temp }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; temperature should have 1 -
+/// @brief Minimum temperature; 0°C
+#define Y513_TEMP_MIN_C 0
+/// @brief Maximum temperature; 50°C
+#define Y513_TEMP_MAX_C 50
+/// @brief Decimal places in string representation; temperature should have 1 -
 /// resolution is 0.1°C.
 #define Y513_TEMP_RESOLUTION 1
 /// @brief Sensor variable number; temperature is stored in sensorValues[1].
@@ -194,7 +202,7 @@ class YosemitechY513 : public YosemitechParent {
     /**
      * @brief Destroy the Yosemitech Y513 object
      */
-    ~YosemitechY513() {}
+    ~YosemitechY513() override = default;
 };
 
 
@@ -222,24 +230,13 @@ class YosemitechY513_BGA : public Variable {
     explicit YosemitechY513_BGA(YosemitechY513* parentSense,
                                 const char*     uuid    = "",
                                 const char*     varCode = Y513_BGA_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y513_BGA_VAR_NUM,
-                   (uint8_t)Y513_BGA_RESOLUTION, Y513_BGA_VAR_NAME,
-                   Y513_BGA_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY513_BGA object.
-     *
-     * @note This must be tied with a parent YosemitechY513 before it can be
-     * used.
-     */
-    YosemitechY513_BGA()
-        : Variable((const uint8_t)Y513_BGA_VAR_NUM,
-                   (uint8_t)Y513_BGA_RESOLUTION, Y513_BGA_VAR_NAME,
-                   Y513_BGA_UNIT_NAME, Y513_BGA_DEFAULT_CODE) {}
+        : Variable(parentSense, Y513_BGA_VAR_NUM, Y513_BGA_RESOLUTION,
+                   Y513_BGA_VAR_NAME, Y513_BGA_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY513_BGA() object - no action
      * needed.
      */
-    ~YosemitechY513_BGA() {}
+    ~YosemitechY513_BGA() override = default;
 };
 
 
@@ -267,23 +264,14 @@ class YosemitechY513_Temp : public Variable {
     explicit YosemitechY513_Temp(YosemitechY513* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y513_TEMP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y513_TEMP_VAR_NUM,
-                   (uint8_t)Y513_TEMP_RESOLUTION, Y513_TEMP_VAR_NAME,
-                   Y513_TEMP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY513_Temp object.
-     *
-     * @note This must be tied with a parent YosemitechY513 before it can be
-     * used.
-     */
-    YosemitechY513_Temp()
-        : Variable((const uint8_t)Y513_TEMP_VAR_NUM,
-                   (uint8_t)Y513_TEMP_RESOLUTION, Y513_TEMP_VAR_NAME,
-                   Y513_TEMP_UNIT_NAME, Y513_TEMP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y513_TEMP_VAR_NUM, Y513_TEMP_RESOLUTION,
+                   Y513_TEMP_VAR_NAME, Y513_TEMP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY513_Temp object - no action needed.
      */
-    ~YosemitechY513_Temp() {}
+    ~YosemitechY513_Temp() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_YOSEMITECHY513_H_
+
+// cSpell:words UGPL

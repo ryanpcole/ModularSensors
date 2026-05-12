@@ -13,18 +13,6 @@
  * ======================================================================= */
 
 // ==========================================================================
-//  Defines for TinyGSM
-// ==========================================================================
-/** Start [defines] */
-#ifndef TINY_GSM_RX_BUFFER
-#define TINY_GSM_RX_BUFFER 64
-#endif
-#ifndef TINY_GSM_YIELD_MS
-#define TINY_GSM_YIELD_MS 2
-#endif
-/** End [defines] */
-
-// ==========================================================================
 //  Include the libraries required for any data logger
 // ==========================================================================
 /** Start [includes] */
@@ -43,7 +31,7 @@
 // The name of this program file
 const char* sketchName = "double_logger.ino";
 // Logger ID - we're only using one logger ID for both "loggers"
-const char* LoggerID = "XXXXX";
+const char* LoggerID = "YourLoggerID";
 // The TWO filenames for the different logging intervals
 const char* FileName5min = "Logger_5MinuteInterval.csv";
 const char* FileName1min = "Logger_1MinuteInterval.csv";
@@ -56,7 +44,7 @@ const int8_t timeZone = -5;  // Eastern Standard Time
 const int32_t serialBaud = 115200;  // Baud rate for debugging
 const int8_t  greenLED   = 8;       // Pin for the green LED
 const int8_t  redLED     = 9;       // Pin for the red LED
-const int8_t  buttonPin  = 21;      // Pin for debugging mode (ie, button pin)
+const int8_t  buttonPin  = 21;      // Pin for debugging mode (i.e., button pin)
 const int8_t  wakePin    = 31;  // MCU interrupt/alarm pin to wake from sleep
 // Mayfly 0.x D31 = A7
 // Set the wake pin to -1 if you do not want the main processor to sleep.
@@ -89,8 +77,8 @@ const int8_t modemLEDPin = redLED;   // MCU pin connected an LED to show modem
                                      // status (-1 if unconnected)
 
 // Network connection information
-const char* wifiId  = "xxxxx";  // WiFi access point, unnecessary for GPRS
-const char* wifiPwd = "xxxxx";  // WiFi password, unnecessary for GPRS
+const char* wifiId  = "YourWiFiSSID";  // The WiFi access point
+const char* wifiPwd = "YourWiFiPassword";       // The WiFi password
 
 DigiXBeeWifi modemXBWF(&modemSerial, modemVccPin, modemStatusPin,
                        useCTSforStatus, modemResetPin, modemSleepRqPin, wifiId,
@@ -103,13 +91,13 @@ DigiXBeeWifi modem = modemXBWF;
 // ==========================================================================
 //  Using the Processor as a Sensor
 // ==========================================================================
-/** Start [processor_sensor] */
+/** Start [processor_stats] */
 #include <sensors/ProcessorStats.h>
 
 // Create the main processor chip "sensor" - for general metadata
 const char*    mcuBoardVersion = "v1.1";
 ProcessorStats mcuBoard(mcuBoardVersion);
-/** End [processor_sensor] */
+/** End [processor_stats] */
 
 
 // ==========================================================================
@@ -178,7 +166,7 @@ Logger logger5min;
 // ==========================================================================
 /** Start [working_functions] */
 // Flashes the LED's on the primary board
-void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
+void greenRedFlash(uint8_t numFlash = 4, uint8_t rate = 75) {
     for (uint8_t i = 0; i < numFlash; i++) {
         digitalWrite(greenLED, HIGH);
         digitalWrite(redLED, LOW);
@@ -222,13 +210,13 @@ void setup() {
     pinMode(redLED, OUTPUT);
     digitalWrite(redLED, LOW);
     // Blink the LEDs to show the board is on and starting up
-    greenredflash();
+    greenRedFlash();
 
     // Set the timezones for the logger/data and the RTC
     // Logging in the given time zone
     Logger::setLoggerTimeZone(timeZone);
     // It is STRONGLY RECOMMENDED that you set the RTC to be in UTC (UTC+0)
-    Logger::setRTCTimeZone(0);
+    loggerClock::setRTCOffset(0);
 
     // Begin the variable array[s], logger[s], and publisher[s]
     array1min.begin(variableCount1min, variableList_at1min);
@@ -255,7 +243,7 @@ void setup() {
     // Connect to the network
     if (modem.connectInternet()) {
         // Synchronize the RTC
-        logger1min.setRTClock(modem.getNISTTime());
+        loggerClock::setRTClock(modem.getNISTTime(), 0, epochStart::unix_epoch);
         modem.updateModemMetadata();
         // Disconnect from the network
         modem.disconnectInternet();
@@ -311,34 +299,15 @@ void loop() {
         // Turn on the LED to show we're taking a reading
         digitalWrite(greenLED, HIGH);
 
-        // Send power to all of the sensors (do this directly on the
-        // VariableArray)
-        Serial.print(F("Powering sensors...\n"));
-        array1min.sensorsPowerUp();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Wake up all of the sensors (do this directly on the VariableArray)
-        Serial.print(F("Waking sensors...\n"));
-        array1min.sensorsWake();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Update the values from all attached sensors (do this directly on the
-        // VariableArray)
-        Serial.print(F("Updating sensor values...\n"));
-        array1min.updateAllSensors();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Put sensors to sleep (do this directly on the VariableArray)
-        Serial.print(F("Putting sensors back to sleep...\n"));
-        array1min.sensorsSleep();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Cut sensor power (do this directly on the VariableArray)
-        Serial.print(F("Cutting sensor power...\n"));
-        array1min.sensorsPowerDown();
-        logger1min.watchDogTimer.resetWatchDog();
+        Serial.print(F("Running a complete sensor update...\n"));
+        array1min.completeUpdate();
+        extendedWatchDog::resetWatchDog();
 
         // Stream the csv data to the SD card
         logger1min.turnOnSDcard(true);
         logger1min.logToSD();
         logger1min.turnOffSDcard(true);
-        logger1min.watchDogTimer.resetWatchDog();
+        extendedWatchDog::resetWatchDog();
 
         // Turn off the LED
         digitalWrite(greenLED, LOW);
@@ -354,34 +323,16 @@ void loop() {
         // Turn on the LED to show we're taking a reading
         digitalWrite(redLED, HIGH);
 
-        // Send power to all of the sensors (do this directly on the
-        // VariableArray)
-        Serial.print(F("Powering sensors...\n"));
-        array5min.sensorsPowerUp();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Wake up all of the sensors (do this directly on the VariableArray)
-        Serial.print(F("Waking sensors...\n"));
-        array5min.sensorsWake();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Update the values from all attached sensors (do this directly on the
-        // VariableArray)
-        Serial.print(F("Updating sensor values...\n"));
-        array5min.updateAllSensors();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Put sensors to sleep (do this directly on the VariableArray)
-        Serial.print(F("Putting sensors back to sleep...\n"));
-        array5min.sensorsSleep();
-        logger1min.watchDogTimer.resetWatchDog();
-        // Cut sensor power (do this directly on the VariableArray)
-        Serial.print(F("Cutting sensor power...\n"));
-        array5min.sensorsPowerDown();
-        logger1min.watchDogTimer.resetWatchDog();
+        // Complete sensor update on this VariableArray
+        Serial.print(F("Running a complete sensor update...\n"));
+        array5min.completeUpdate();
+        extendedWatchDog::resetWatchDog();
 
         // Stream the csv data to the SD card
         logger5min.turnOnSDcard(true);
         logger5min.logToSD();
         logger5min.turnOffSDcard(true);
-        logger1min.watchDogTimer.resetWatchDog();
+        extendedWatchDog::resetWatchDog();
 
         // Turn off the LED
         digitalWrite(redLED, LOW);
@@ -389,13 +340,14 @@ void loop() {
         Serial.println(F("--------------------<555>---------------------\n"));
     }
     // Once a day, at noon, sync the clock
-    if (Logger::markedLocalEpochTime % 86400 == 43200) {
+    if (Logger::markedLocalUnixTime % 86400 == 43200) {
         // Turn on the modem
         modem.modemWake();
         // Connect to the network
         if (modem.connectInternet()) {
             // Synchronize the RTC
-            logger1min.setRTClock(modem.getNISTTime());
+            loggerClock::setRTClock(modem.getNISTTime(), 0,
+                                    epochStart::unix_epoch);
             // Disconnect from the network
             modem.disconnectInternet();
         }
@@ -408,3 +360,5 @@ void loop() {
     logger1min.systemSleep();
 }
 /** End [loop] */
+
+// cspell: words modemXBWF

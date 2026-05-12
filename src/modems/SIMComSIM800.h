@@ -7,7 +7,7 @@
  *
  * @brief Contains the SIMComSIM800 subclass of loggerModem for Adafruit Fona
  * 2G, the Sodaq GPRSBeeR4 and almost any other module based on the SIMCOM
- * SIM800 or SIM900 modules and thier variants.
+ * SIM800 or SIM900 modules and their variants.
  */
 /* clang-format off */
 /**
@@ -28,7 +28,7 @@
  * SIM800.
  * The one exception is the Sodaq GPRSBee **R6 and higher**, which has its own
  * [constructor](@ref modem_gprsbee).
- * The earlier Sodaq GPRSBee's (ie, R4) do use this version.
+ * The earlier Sodaq GPRSBees (i.e., R4) do use this version.
  *
  * The SIM800 consumes up to 2A of power while connecting to the network.
  * That is 4x what a typical USB or Arduino board can supply, so expect to give
@@ -55,10 +55,13 @@
 #ifndef SRC_MODEMS_SIMCOMSIM800_H_
 #define SRC_MODEMS_SIMCOMSIM800_H_
 
-// Debugging Statement
-// #define MS_SIMCOMSIM800_DEBUG
-// #define MS_SIMCOMSIM800_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_SIMCOMSIM800_DEBUG
 #define MS_DEBUGGING_STD "SIMComSIM800"
 #endif
@@ -67,17 +70,15 @@
  * @brief The modem type for the underlying TinyGSM library.
  */
 #define TINY_GSM_MODEM_SIM800
-#ifndef TINY_GSM_RX_BUFFER
-/**
- * @brief The size of the buffer for incoming data.
- */
-#define TINY_GSM_RX_BUFFER 64
-#endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
-#include "TinyGsmClient.h"
+#undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
+#include "TinyGsmClientSIM800.h"
 #include "LoggerModem.h"
 
 #ifdef MS_SIMCOMSIM800_DEBUG_DEEP
@@ -142,15 +143,15 @@
  */
 #define SIM800_WAKE_DELAY_MS 450
 /**
- * @brief The loggerModem::_max_atresponse_time_ms.
+ * @brief The loggerModem::_max_at_response_time_ms.
  *
  * Time after end pulse until serial port becomes active on SIM800 is >3sec from
  * start of 1s pulse.
  */
-#define SIM800_ATRESPONSE_TIME_MS 3000
+#define SIM800_AT_RESPONSE_TIME_MS 3000
 
 /**
- * @brief The loggerModem::_disconnetTime_ms.
+ * @brief The loggerModem::_disconnectTime_ms.
  *
  * SIM800 power down (gracefully) takes >3sec.  We allow up to 15sec for
  * shutdown in case it is not monitored.
@@ -161,13 +162,13 @@
 /**
  * @brief The loggerModem subclass for the Adafruit Fona 2G, the Sodaq GPRSBeeR4
  * and almost any other module based on the [SIMCOM SIM800 or SIM900 modules and
- * thier variants](@ref modem_sim800).
+ * their variants](@ref modem_sim800).
  */
 class SIMComSIM800 : public loggerModem {
  public:
     /**
      * @brief Construct a new SIMComSIM800 object
-     * The constuctor initializes all of the provided member variables,
+     * The constructor initializes all of the provided member variables,
      * constructs a loggerModem parent class with the appropriate timing for the
      * module, calls the constructor for a TinyGSM modem on the provided
      * modemStream, and creates a TinyGSM Client linked to the modem.
@@ -189,19 +190,35 @@ class SIMComSIM800 : public loggerModem {
     /**
      * @brief Destroy the SIMComSIM800 object - no action taken
      */
-    ~SIMComSIM800();
+    ~SIMComSIM800() override = default;
 
-    bool modemWake(void) override;
+    bool modemWake() override;
 
     bool connectInternet(uint32_t maxConnectionTime = 50000L) override;
-    void disconnectInternet(void) override;
+    void disconnectInternet() override;
 
-    uint32_t getNISTTime(void) override;
+    Client* createClient() override;
+    void    deleteClient(Client* client) override;
+    Client* createSecureClient() override;
+    void    deleteSecureClient(Client* client) override;
+    Client* createSecureClient(SSLAuthMode sslAuthMode,
+                               SSLVersion  sslVersion     = SSLVersion::TLS1_2,
+                               const char* CAcertName     = nullptr,
+                               const char* clientCertName = nullptr,
+                               const char* clientKeyName  = nullptr) override;
+    Client* createSecureClient(
+        const char* pskIdent, const char* psKey,
+        SSLVersion sslVersion = SSLVersion::TLS1_2) override;
+    Client* createSecureClient(
+        const char* pskTableName,
+        SSLVersion  sslVersion = SSLVersion::TLS1_2) override;
+
+    uint32_t getNISTTime() override;
 
     bool  getModemSignalQuality(int16_t& rssi, int16_t& percent) override;
     bool  getModemBatteryStats(int8_t& chargeState, int8_t& percent,
                                int16_t& milliVolts) override;
-    float getModemChipTemperature(void) override;
+    float getModemChipTemperature() override;
 
 #ifdef MS_SIMCOMSIM800_DEBUG_DEEP
     StreamDebugger _modemATDebugger;
@@ -210,18 +227,14 @@ class SIMComSIM800 : public loggerModem {
     /**
      * @brief Public reference to the TinyGSM modem.
      */
-    TinyGsm gsmModem;
-    /**
-     * @brief Public reference to the TinyGSM Client.
-     */
-    TinyGsmClient gsmClient;
+    TinyGsmSim800 gsmModem;
 
  protected:
-    bool isInternetAvailable(void) override;
-    bool modemSleepFxn(void) override;
-    bool modemWakeFxn(void) override;
-    bool extraModemSetup(void) override;
-    bool isModemAwake(void) override;
+    bool isInternetAvailable() override;
+    bool modemSleepFxn() override;
+    bool modemWakeFxn() override;
+    bool extraModemSetup() override;
+    bool isModemAwake() override;
 
  private:
     const char* _apn;  ///< Internal reference to the cellular APN

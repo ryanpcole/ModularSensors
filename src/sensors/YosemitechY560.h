@@ -60,7 +60,7 @@
 /**
  * @anchor sensor_y560_var_counts
  * @name Sensor Variable Counts
- * The number of variables that can be returned by a Yosemitch Y560
+ * The number of variables that can be returned by a Yosemitech Y560
  */
 /**@{*/
 /// @brief Sensor::_numReturnedValues; the Y560 can report 3 values.
@@ -72,11 +72,11 @@
 /**
  * @anchor sensor_y560_timing
  * @name Sensor Timing
- * The sensor timing for a Yosemitch Y560
+ * The sensor timing for a Yosemitech Y560
  */
 /**@{*/
 /// @brief Sensor::_warmUpTime_ms; time before sensor responds after power -
-/// <200ms for response, but need 2-10s to load capcitors for brush & measure.
+/// <200ms for response, but need 2-10s to load capacitors for brush & measure.
 #define Y560_WARM_UP_TIME_MS 7000
 /// @brief Sensor::_stabilizationTime_ms; time between "StartMeasurement"
 /// command and stable reading 20s in manual but this includes 15s for brushing.
@@ -90,14 +90,18 @@
 /**
  * @anchor sensor_y560_nh4
  * @name NH4_N
- * The NH4_N variable from a Yosemitch Y560
+ * The NH4_N variable from a Yosemitech Y560
  * - Range is 0-10 or 0-100 mg/L NH4-N
  * - Accuracy is ±(5% + 0.2 mg/L)
  *
  * {{ @ref YosemitechY560_NH4_N::YosemitechY560_NH4_N }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; NH4_N should have 1 -
+/// @brief Minimum NH4_N concentration; 0 mg/L
+#define Y560_NH4_N_MIN_MGPL 0
+/// @brief Maximum NH4_N concentration; 100 mg/L
+#define Y560_NH4_N_MAX_MGPL 100
+/// @brief Decimal places in string representation; NH4_N should have 1 -
 /// resolution is 0.1 mg/L.
 #define Y560_NH4_N_RESOLUTION 1
 /// @brief Sensor variable number; NH4_N is stored in sensorValues[0].
@@ -117,14 +121,18 @@
 /**
  * @anchor sensor_y560_temp
  * @name Temperature
- * The temperature variable from a Yosemitch Y560
+ * The temperature variable from a Yosemitech Y560
  * - Range is 0°C to + 50°C
  * - Accuracy is ± 0.2°C
  *
  * {{ @ref YosemitechY560_Temp::YosemitechY560_Temp }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; temperature should have 1 -
+/// @brief Minimum temperature; 0°C
+#define Y560_TEMP_MIN_C 0
+/// @brief Maximum temperature; 50°C
+#define Y560_TEMP_MAX_C 50
+/// @brief Decimal places in string representation; temperature should have 1 -
 /// resolution is 0.1°C.
 #define Y560_TEMP_RESOLUTION 1
 /// @brief Sensor variable number; temperature is stored in sensorValues[1].
@@ -144,14 +152,18 @@
 /**
  * @anchor sensor_y560_pH
  * @name pH
- * The pH variable from a Yosemitch Y560
+ * The pH variable from a Yosemitech Y560
  * - Range is 2 to 12 pH units
  * - Accuracy is ± 0.1 pH units
  *
  * {{ @ref YosemitechY560_pH::YosemitechY560_pH }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; pH should have 2 -
+/// @brief Minimum pH; 2 pH units
+#define Y560_PH_MIN_PH 2
+/// @brief Maximum pH; 12 pH units
+#define Y560_PH_MAX_PH 12
+/// @brief Decimal places in string representation; pH should have 2 -
 /// resolution is 0.01 pH units.
 #define Y560_PH_RESOLUTION 2
 /// @brief Sensor variable number; pH is stored in sensorValues[2].
@@ -221,7 +233,7 @@ class YosemitechY560 : public YosemitechParent {
     /**
      * @brief Destroy the Yosemitech Y560 object
      */
-    ~YosemitechY560() {}
+    ~YosemitechY560() override = default;
 };
 
 
@@ -249,23 +261,12 @@ class YosemitechY560_NH4_N : public Variable {
     explicit YosemitechY560_NH4_N(YosemitechY560* parentSense,
                                   const char*     uuid = "",
                                   const char* varCode = Y560_NH4_N_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y560_NH4_N_VAR_NUM,
-                   (const uint8_t)Y560_NH4_N_RESOLUTION, Y560_NH4_N_VAR_NAME,
-                   Y560_NH4_N_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY560_NH4_N object.
-     *
-     * @note This must be tied with a parent YosemitechY560 before it can be
-     * used.
-     */
-    YosemitechY560_NH4_N()
-        : Variable((const uint8_t)Y560_NH4_N_VAR_NUM,
-                   (const uint8_t)Y560_NH4_N_RESOLUTION, Y560_NH4_N_VAR_NAME,
-                   Y560_NH4_N_UNIT_NAME, Y560_NH4_N_DEFAULT_CODE) {}
+        : Variable(parentSense, Y560_NH4_N_VAR_NUM, Y560_NH4_N_RESOLUTION,
+                   Y560_NH4_N_VAR_NAME, Y560_NH4_N_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY560_NH4_N object - no action needed.
      */
-    ~YosemitechY560_NH4_N() {}
+    ~YosemitechY560_NH4_N() override = default;
 };
 
 
@@ -293,23 +294,12 @@ class YosemitechY560_Temp : public Variable {
     explicit YosemitechY560_Temp(YosemitechY560* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y560_TEMP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y560_TEMP_VAR_NUM,
-                   (uint8_t)Y560_TEMP_RESOLUTION, Y560_TEMP_VAR_NAME,
-                   Y560_TEMP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY560_Temp object.
-     *
-     * @note This must be tied with a parent YosemitechY560 before it can be
-     * used.
-     */
-    YosemitechY560_Temp()
-        : Variable((const uint8_t)Y560_TEMP_VAR_NUM,
-                   (uint8_t)Y560_TEMP_RESOLUTION, Y560_TEMP_VAR_NAME,
-                   Y560_TEMP_UNIT_NAME, Y560_TEMP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y560_TEMP_VAR_NUM, Y560_TEMP_RESOLUTION,
+                   Y560_TEMP_VAR_NAME, Y560_TEMP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY560_Temp object - no action needed.
      */
-    ~YosemitechY560_Temp() {}
+    ~YosemitechY560_Temp() override = default;
 };
 
 
@@ -337,22 +327,12 @@ class YosemitechY560_pH : public Variable {
     explicit YosemitechY560_pH(YosemitechY560* parentSense,
                                const char*     uuid    = "",
                                const char*     varCode = Y560_PH_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y560_PH_VAR_NUM,
-                   (uint8_t)Y560_PH_RESOLUTION, Y560_PH_VAR_NAME,
-                   Y560_PH_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY560_pH object.
-     *
-     * @note This must be tied with a parent YosemitechY560 before it can be
-     * used.
-     */
-    YosemitechY560_pH()
-        : Variable((const uint8_t)Y560_PH_VAR_NUM, (uint8_t)Y560_PH_RESOLUTION,
-                   Y560_PH_VAR_NAME, Y560_PH_UNIT_NAME, Y560_PH_DEFAULT_CODE) {}
+        : Variable(parentSense, Y560_PH_VAR_NUM, Y560_PH_RESOLUTION,
+                   Y560_PH_VAR_NAME, Y560_PH_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY560_pH object - no action needed.
      */
-    ~YosemitechY560_pH() {}
+    ~YosemitechY560_pH() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_YOSEMITECHY560_H_

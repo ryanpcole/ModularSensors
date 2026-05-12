@@ -3,7 +3,7 @@
  * @copyright Stroud Water Research Center
  * Part of the EnviroDIY ModularSensors library for Arduino.
  * This library is published under the BSD-3 license.
- * @author Initial developement for Atlas Sensors was done by Adam Gold
+ * @author Initial development for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Implements the AtlasScientificEC class.
@@ -21,16 +21,11 @@ AtlasScientificEC::AtlasScientificEC(TwoWire* theI2C, int8_t powerPin,
                   ATLAS_COND_WARM_UP_TIME_MS, ATLAS_COND_STABILIZATION_TIME_MS,
                   ATLAS_COND_MEASUREMENT_TIME_MS,
                   ATLAS_COND_INC_CALC_VARIABLES) {}
+// Delegating constructor
 AtlasScientificEC::AtlasScientificEC(int8_t powerPin, uint8_t i2cAddressHex,
                                      uint8_t measurementsToAverage)
-    : AtlasParent(powerPin, i2cAddressHex, measurementsToAverage,
-                  "AtlasScientificEC", ATLAS_COND_NUM_VARIABLES,
-                  ATLAS_COND_WARM_UP_TIME_MS, ATLAS_COND_STABILIZATION_TIME_MS,
-                  ATLAS_COND_MEASUREMENT_TIME_MS,
-                  ATLAS_COND_INC_CALC_VARIABLES) {}
-
-// Destructor
-AtlasScientificEC::~AtlasScientificEC() {}
+    : AtlasScientificEC(&Wire, powerPin, i2cAddressHex, measurementsToAverage) {
+}
 
 
 // Setup
@@ -40,6 +35,7 @@ bool AtlasScientificEC::setup() {
 
     // This sensor needs power for setup!
     // We want to turn on all possible measurement parameters
+    delay(10);
     bool wasOn = checkPowerOn();
     if (!wasOn) { powerUp(); }
     waitForWarmUp();
@@ -77,9 +73,9 @@ bool AtlasScientificEC::setup() {
 
     if (!success) {
         // Set the status error bit (bit 7)
-        _sensorStatus |= 0b10000000;
+        setStatusBit(ERROR_OCCURRED);
         // UN-set the set-up bit (bit 0) since setup failed!
-        _sensorStatus &= 0b11111110;
+        clearStatusBit(SETUP_SUCCESSFUL);
     }
 
     // Turn the power back off it it had been turned on

@@ -18,7 +18,7 @@
  */
 /* clang-format off */
 /**
- * @defgroup sensor_y511 Yosemitech Y511 Wipered Turbidty Sensor
+ * @defgroup sensor_y511 Yosemitech Y511 Wipered Turbidity Sensor
  * Classes for the Yosemitech Y511 wipered turbidity sensor.
  *
  * @ingroup yosemitech_group
@@ -60,7 +60,7 @@
 /**
  * @anchor sensor_y511_var_counts
  * @name Sensor Variable Counts
- * The number of variables that can be returned by a Yosemitch Y511
+ * The number of variables that can be returned by a Yosemitech Y511
  */
 /**@{*/
 /// @brief Sensor::_numReturnedValues; the Y511 can report 2 values.
@@ -72,7 +72,7 @@
 /**
  * @anchor sensor_y511_timing
  * @name Sensor Timing
- * The sensor timing for a Yosemitch Y511
+ * The sensor timing for a Yosemitech Y511
  */
 /**@{*/
 /**
@@ -102,14 +102,18 @@
 /**
  * @anchor sensor_y511_turb
  * @name Turbidity
- * The turbidity variable from a Yosemitch Y511
+ * The turbidity variable from a Yosemitech Y511
  * - Range is 0.1 to 1000 NTU
  * - Accuracy is ± 5 % or 0.3 NTU
  *
  * {{ @ref YosemitechY511_Turbidity::YosemitechY511_Turbidity }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; turbidity should have 2 -
+/// @brief Minimum turbidity; 0.1 NTU
+#define Y511_TURB_MIN_NTU 0.1
+/// @brief Maximum turbidity; 1000 NTU
+#define Y511_TURB_MAX_NTU 1000
+/// @brief Decimal places in string representation; turbidity should have 2 -
 /// resolution is 0.01 NTU.
 #define Y511_TURB_RESOLUTION 2
 /// @brief Sensor variable number; turbidity is stored in sensorValues[0].
@@ -129,14 +133,18 @@
 /**
  * @anchor sensor_y511_temp
  * @name Temperature
- * The temperature variable from a Yosemitch Y511
+ * The temperature variable from a Yosemitech Y511
  * - Range is 0°C to + 50°C
  * - Accuracy is ± 0.2°C
  *
  * {{ @ref YosemitechY511_Temp::YosemitechY511_Temp }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; temperature should have 1 -
+/// @brief Minimum temperature; 0°C
+#define Y511_TEMP_MIN_C 0
+/// @brief Maximum temperature; 50°C
+#define Y511_TEMP_MAX_C 50
+/// @brief Decimal places in string representation; temperature should have 1 -
 /// resolution is 0.1°C.
 #define Y511_TEMP_RESOLUTION 1
 /// @brief Sensor variable number; temperature is stored in sensorValues[1].
@@ -207,7 +215,7 @@ class YosemitechY511 : public YosemitechParent {
     /**
      * @brief Destroy the Yosemitech Y511 object
      */
-    ~YosemitechY511() {}
+    ~YosemitechY511() override = default;
 };
 
 
@@ -235,23 +243,12 @@ class YosemitechY511_Turbidity : public Variable {
     explicit YosemitechY511_Turbidity(
         YosemitechY511* parentSense, const char* uuid = "",
         const char* varCode = Y511_TURB_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y511_TURB_VAR_NUM,
-                   (uint8_t)Y511_TURB_RESOLUTION, Y511_TURB_VAR_NAME,
-                   Y511_TURB_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY511_Turbidity object.
-     *
-     * @note This must be tied with a parent YosemitechY511 before it can be
-     * used.
-     */
-    YosemitechY511_Turbidity()
-        : Variable((const uint8_t)Y511_TURB_VAR_NUM,
-                   (uint8_t)Y511_TURB_RESOLUTION, Y511_TURB_VAR_NAME,
-                   Y511_TURB_UNIT_NAME, Y511_TURB_DEFAULT_CODE) {}
+        : Variable(parentSense, Y511_TURB_VAR_NUM, Y511_TURB_RESOLUTION,
+                   Y511_TURB_VAR_NAME, Y511_TURB_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY511_Turbidity object - no action needed.
      */
-    ~YosemitechY511_Turbidity() {}
+    ~YosemitechY511_Turbidity() override = default;
 };
 
 
@@ -279,23 +276,14 @@ class YosemitechY511_Temp : public Variable {
     explicit YosemitechY511_Temp(YosemitechY511* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y511_TEMP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y511_TEMP_VAR_NUM,
-                   (uint8_t)Y511_TEMP_RESOLUTION, Y511_TEMP_VAR_NAME,
-                   Y511_TEMP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY511_Temp object.
-     *
-     * @note This must be tied with a parent YosemitechY511 before it can be
-     * used.
-     */
-    YosemitechY511_Temp()
-        : Variable((const uint8_t)Y511_TEMP_VAR_NUM,
-                   (uint8_t)Y511_TEMP_RESOLUTION, Y511_TEMP_VAR_NAME,
-                   Y511_TEMP_UNIT_NAME, Y511_TEMP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y511_TEMP_VAR_NUM, Y511_TEMP_RESOLUTION,
+                   Y511_TEMP_VAR_NAME, Y511_TEMP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY511_Temp object - no action needed.
      */
-    ~YosemitechY511_Temp() {}
+    ~YosemitechY511_Temp() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_YOSEMITECHY511_H_
+
+// cSpell:words Wipered

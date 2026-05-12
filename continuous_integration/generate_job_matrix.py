@@ -2,7 +2,6 @@
 # %%
 import json
 import shutil
-import re
 from typing import List
 from platformio.project.config import ProjectConfig
 import re
@@ -25,8 +24,11 @@ if "GITHUB_WORKSPACE" in os.environ.keys():
     workspace_dir = os.environ.get("GITHUB_WORKSPACE")
 else:
     workspace_dir = os.getcwd()
+if "\\continuous_integration" in workspace_dir:
+    workspace_dir = workspace_dir.replace("\\continuous_integration", "")
 workspace_path = os.path.abspath(os.path.realpath(workspace_dir))
 print(f"Workspace Path: {workspace_path}")
+
 
 # %%
 # The examples directory
@@ -54,7 +56,28 @@ if not os.path.exists(artifact_dir):
     print(f"Creating the directory for artifacts: {artifact_path}")
     os.makedirs(artifact_dir)
 
+# The library config file
+ms_config_file = "ModSensorConfig.h"
+ms_config_path = os.path.join(
+    workspace_dir,
+    "home",
+    "arduino",
+    "user",
+    "libraries",
+    "ModularSensors",
+    "src",
+    ms_config_file,
+)
+ms_config_path = os.path.abspath(os.path.realpath(ms_config_path))
+print(f"Modular Sensors Config Path: {ms_config_path}")
+
 compilers = ["Arduino CLI", "PlatformIO"]
+non_acli_build_flag = [
+    "-Wall",
+    "-Wextra",
+    "-D SDI12_EXTERNAL_PCINT",
+    "-D NEOSWSERIAL_EXTERNAL_PCINT",
+]
 
 
 # %%
@@ -79,12 +102,24 @@ with open(os.path.join(ci_path, "platformio_to_arduino_boards.json")) as f:
     pio_to_acli = json.load(f)
 
 # Find all of the non-menu examples
-non_menu_examples = [
-    f
-    for f in os.listdir(examples_path)
-    if os.path.isdir(os.path.join(examples_path, f))
-    and f not in [".history", "logger_test", menu_example_name]
-]
+non_menu_examples = []
+for root, subdirs, files in os.walk(examples_path):
+    folder_name = os.path.basename(root)
+    if folder_name in {
+        ".history",
+        "logger_test",
+        "archive",
+        "tests",
+        menu_example_name,
+    }:
+        subdirs.clear()  # Prevent os.walk from descending into excluded directories
+        continue
+    for filename in files:
+        file_path = os.path.join(root, filename)
+        if filename == f"{folder_name}.ino":
+            non_menu_examples.append(os.path.realpath(root))
+            if use_verbose:
+                print(f"::debug::\t- example: {filename} (full path: {file_path})")
 
 # %%
 # read configurations based on existing files and environment variables
@@ -115,16 +150,6 @@ pio_extra_config_file = os.path.join(ci_path, "platformio_extra_flags.ini")
 pio_config = ProjectConfig(pio_config_file)
 pio_extra_config = ProjectConfig(pio_extra_config_file)
 
-# Translation between board names on PlatformIO and the Arduino CLI
-pio_to_acli = {
-    "mayfly": {"fqbn": "EnviroDIY:avr:envirodiy_mayfly"},
-    "megaatmega2560": {"fqbn": "arduino:avr:mega"},
-    "zeroUSB": {"fqbn": "arduino:samd:mzero_bl"},
-    "adafruit_feather_m0": {"fqbn": "adafruit:samd:adafruit_feather_m0"},
-    "adafruit_feather_m4": {"fqbn": "adafruit:samd:adafruit_feather_m4"},
-    "adafruit_grandcentral_m4": {"fqbn": "adafruit:samd:adafruit_grandcentral_m4"},
-}
-
 
 def get_example_folder(subfolder_name):
     return os.path.join(examples_path, subfolder_name)
@@ -152,6 +177,8 @@ def create_arduino_cli_command(pio_env_name: str, code_subfolder: str) -> str:
         "text",
         "--fqbn",
         pio_to_acli[pio_config.get("env:{}".format(pio_env_name), "board")]["fqbn"],
+    ]
+    arduino_command_args += [
         f'"{os.path.join(examples_path, code_subfolder)}"',
     ]
     return " ".join(arduino_command_args)
@@ -206,9 +233,33 @@ def create_logged_command(
     output_commands = []
     lower_compiler = compiler.lower().replace(" ", "").strip()
     if lower_compiler == "platformio":
-        build_command = create_pio_ci_command(pio_env_file, pio_env, code_subfolder)
+        build_command = ""
+        # https://stackoverflow.com/questions/67703736/how-to-use-wildcard-in-renaming-multiple-files-in-a-directory-in-python
+        for filename in (
+            os.listdir(os.path.join(workspace_dir, examples_dir, code_subfolder))
+            if workspace_dir.lower() not in code_subfolder.lower()
+            else os.listdir(f"{code_subfolder}")
+        ):
+            if ".ino" not in filename or "menu" not in filename:
+                continue
+            sf_name = filename.replace(".ino", "")
+            sf_path = os.path.join(
+                workspace_dir, "continuous_integration_artifacts", sf_name
+            )
+            my_dest = os.path.abspath(
+                os.path.join(sf_path, filename.replace(".ino", ".cpp"))
+            )
+            my_source = os.path.abspath(os.path.join(sf_path, filename))
+            build_command += f'mv "{my_source}" "{my_dest}" || true\n'
+        build_command += create_pio_ci_command(pio_env_file, pio_env, code_subfolder)
     elif lower_compiler == "arduinocli":
-        build_command = create_arduino_cli_command(pio_env, code_subfolder)
+        build_command = ""
+        for pio_build_flag in pio_config.get("env:{}".format(pio_env), "build_flags"):
+            if pio_build_flag not in non_acli_build_flag:
+                build_command += f"echo '#define {pio_build_flag.replace('-D','').replace('=',' ')}' > temp_config.h\n"
+                build_command += f"cat {ms_config_path} >> temp_config.h\n"
+                build_command += f"mv temp_config.h {ms_config_path}\n"
+        build_command += create_arduino_cli_command(pio_env, code_subfolder)
     else:
         build_command = ""
 
@@ -266,28 +317,35 @@ for pio_env in pio_config.envs():
         for compiler, command_list in zip(
             compilers, [arduino_ex_commands, pio_ex_commands]
         ):
-            if compiler == "Arduino CLI" and example == "data_saving":
-                # skip this one, it's too big
-                pass
-            else:
-                command_list.extend(
-                    create_logged_command(
-                        compiler=compiler,
-                        group_title=example,
-                        code_subfolder=example,
-                        pio_env=pio_env,
-                    )
+            # Skip examples that need to be updated or don't apply
+            example_name = os.path.basename(example).lower()
+            if "data_saving" in example_name:
+                continue  # skip until updated
+            if "mayfly" in example_name and pio_env != "mayfly":
+                continue  # skip mayfly examples on non-mayfly builds
+            if "drwi" in example_name and pio_env not in ["mayfly", "stonefly"]:
+                continue  # skip drwi examples on non-EnviroDIY processor builds
+
+            command_list.extend(
+                create_logged_command(
+                    compiler=compiler,
+                    group_title=example,
+                    code_subfolder=example,
+                    pio_env=pio_env,
                 )
+            )
 
     arduino_job_matrix.append(
         {
-            "job_name": "{} - Arduino - Other Examples".format(pio_env),
+            "job_name": "Arduino - {} - Other Examples".format(pio_env),
+            "job_tag": "{}-Other_Examples".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(arduino_ex_commands + [end_job_commands]),
         }
     )
     pio_job_matrix.append(
         {
-            "job_name": "{} - Platformio - Other Examples".format(pio_env),
+            "job_name": "PlatformIO - {} - Other Examples".format(pio_env),
+            "job_tag": "{}-Other_Examples".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(pio_ex_commands + [end_job_commands]),
         }
     )
@@ -383,7 +441,7 @@ all_sensor_flags = [
     "NO_SENSORS",
 ]
 all_publisher_flags = [
-    "BUILD_PUB_ENVIRO_DIY_PUBLISHER",
+    "BUILD_PUB_MONITOR_MY_WATERSHED_PUBLISHER",
 ]
 
 
@@ -444,13 +502,15 @@ for pio_env in pio_config.envs():
 
     arduino_job_matrix.append(
         {
-            "job_name": "{} - Arduino - Modems".format(pio_env),
+            "job_name": "Arduino - {} - Modems".format(pio_env),
+            "job_tag": "{}-Modems".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(arduino_modem_commands + [end_job_commands]),
         }
     )
     pio_job_matrix.append(
         {
-            "job_name": "{} - PlatformIO - Modems".format(pio_env),
+            "job_name": "PlatformIO - {} - Modems".format(pio_env),
+            "job_tag": "{}-Modems".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(pio_modem_commands + [end_job_commands]),
         }
     )
@@ -490,13 +550,15 @@ for pio_env in pio_config.envs():
 
     arduino_job_matrix.append(
         {
-            "job_name": "{} - Arduino - Publishers".format(pio_env),
+            "job_name": "Arduino - {} - Publishers".format(pio_env),
+            "job_tag": "{}-Publishers".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(arduino_pub_commands + [end_job_commands]),
         }
     )
     pio_job_matrix.append(
         {
-            "job_name": "{} - PlatformIO - Publishers".format(pio_env),
+            "job_name": "PlatformIO - {} - Publishers".format(pio_env),
+            "job_tag": "{}-Publishers".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(pio_pub_commands + [end_job_commands]),
         }
     )
@@ -588,13 +650,15 @@ for pio_env in pio_config.envs():
 
     arduino_job_matrix.append(
         {
-            "job_name": "{} - Arduino - Sensors".format(pio_env),
+            "job_name": "Arduino - {} - Sensors".format(pio_env),
+            "job_tag": "{}-Sensors".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(arduino_sensor_commands + [end_job_commands]),
         }
     )
     pio_job_matrix.append(
         {
-            "job_name": "{} - PlatformIO - Sensors".format(pio_env),
+            "job_name": "PlatformIO - {} - Sensors".format(pio_env),
+            "job_tag": "{}-Sensors".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(pio_sensor_commands + [end_job_commands]),
         }
     )
@@ -644,13 +708,15 @@ for pio_env in pio_config.envs():
 
     arduino_job_matrix.append(
         {
-            "job_name": "{} - Arduino - Loops".format(pio_env),
+            "job_name": "Arduino - {} - Loops".format(pio_env),
+            "job_tag": "{}-Loops".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(arduino_loop_commands + [end_job_commands]),
         }
     )
     pio_job_matrix.append(
         {
-            "job_name": "{} - PlatformIO - Loops".format(pio_env),
+            "job_name": "PlatformIO - {} - Loops".format(pio_env),
+            "job_tag": "{}-Loops".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(pio_loop_commands + [end_job_commands]),
         }
     )
@@ -701,13 +767,15 @@ for pio_env in ["mayfly"]:
 
     arduino_job_matrix.append(
         {
-            "job_name": "{} - Arduino - Serials".format(pio_env),
+            "job_name": "Arduino - {} - Serials".format(pio_env),
+            "job_tag": "{}-Serials".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(arduino_serial_commands + [end_job_commands]),
         }
     )
     pio_job_matrix.append(
         {
-            "job_name": "{} - PlatformIO - Serials".format(pio_env),
+            "job_name": "PlatformIO - {} - Serials".format(pio_env),
+            "job_tag": "{}-Serials".format(pio_env).lower().replace(" ", "_"),
             "command": "\n".join(pio_serial_commands + [end_job_commands]),
         }
     )
@@ -761,15 +829,17 @@ json_out.close()
 
 # %%
 # different attempt to save output
-with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-    print("arduino_job_matrix={}".format(json.dumps(arduino_job_matrix)), file=fh)
-    print("pio_job_matrix={}".format(json.dumps(pio_job_matrix)), file=fh)
+if "GITHUB_WORKSPACE" in os.environ.keys():
+    with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+        print("arduino_job_matrix={}".format(json.dumps(arduino_job_matrix)), file=fh)
+        print("pio_job_matrix={}".format(json.dumps(pio_job_matrix)), file=fh)
 
 
 # %%
 if "GITHUB_WORKSPACE" not in os.environ.keys():
     try:
         shutil.rmtree(artifact_dir)
+        os.remove(os.path.join(ci_path, "platformio_to_arduino_boards.json"))
     except:
         pass
 

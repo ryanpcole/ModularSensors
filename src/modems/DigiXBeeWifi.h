@@ -22,7 +22,7 @@
  * Digi's wifi XBee is implemented as a DigiXBeeWifi object - a subclass of
  * DigiXBee and loggerModem.
  * The S6B is run in Digi's "transparent" mode.
- * The maxiumum power draw is ~300mA.
+ * The maximum power draw is ~300mA.
  *
  * @section modem_digi_wifi_docs Manufacturer Documentation
  * The Digi product page for the S6B wifi module is here:
@@ -43,14 +43,16 @@
 #ifndef SRC_MODEMS_DIGIXBEEWIFI_H_
 #define SRC_MODEMS_DIGIXBEEWIFI_H_
 
-// Debugging Statement
-// #define MS_DIGIXBEEWIFI_DEBUG
-// #define MS_DIGIXBEEWIFI_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_DIGIXBEEWIFI_DEBUG
 #define MS_DEBUGGING_STD "DigiXBeeWifi"
 #endif
-
 #ifdef MS_DIGIXBEEWIFI_DEBUG_DEEP
 #define MS_DEBUGGING_DEEP "DigiXBeeWifi"
 #endif
@@ -59,17 +61,15 @@
  * @brief The modem type for the underlying TinyGSM library.
  */
 #define TINY_GSM_MODEM_XBEE
-#ifndef TINY_GSM_RX_BUFFER
-/**
- * @brief The size of the buffer for incoming data.
- */
-#define TINY_GSM_RX_BUFFER 64
-#endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
-#include "TinyGsmClient.h"
+#undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
+#include "TinyGsmClientXBee.h"
 #undef TINY_GSM_MODEM_HAS_GPRS
 #include "DigiXBee.h"
 
@@ -103,7 +103,7 @@ class DigiXBeeWifi : public DigiXBee {
     /**
      * @brief Construct a new Digi XBee Wifi object
      *
-     * The constuctor initializes all of the provided member variables,
+     * The constructor initializes all of the provided member variables,
      * constructs a loggerModem parent class with the appropriate timing for the
      * module, calls the constructor for a TinyGSM modem on the provided
      * modemStream, and creates a TinyGSM Client linked to the modem.
@@ -117,14 +117,14 @@ class DigiXBeeWifi : public DigiXBee {
      * status indicator rather than the true status (`ON/SLEEP_N/DIO9`) pin.
      * This inverts the loggerModem::_statusLevel.
      * @param modemResetPin @copydoc loggerModem::_modemResetPin
-     * This shold be the pin called `RESET_N` in Digi's hardware reference.
+     * This should be the pin called `RESET_N` in Digi's hardware reference.
      * @param modemSleepRqPin @copydoc loggerModem::_modemSleepRqPin
-     * This shold be the pin called `DTR_N/SLEEP_RQ/DIO8` in Digi's hardware
+     * This should be the pin called `DTR_N/SLEEP_RQ/DIO8` in Digi's hardware
      * reference.
      * @param ssid The wifi network ID.
      * @param pwd The wifi network password, assuming WPA2.
      * @param maintainAssociation Whether to maintain association with the
-     * access point during sleep. Maitaining the association during sleep draws
+     * access point during sleep. Maintaining the association during sleep draws
      * more current (+10mA?), but also allows a faster reconnection on the next
      * wake.
      */
@@ -135,21 +135,37 @@ class DigiXBeeWifi : public DigiXBee {
     /**
      * @brief Destroy the Digi XBee Wifi object - no action taken
      */
-    ~DigiXBeeWifi();
+    ~DigiXBeeWifi() override = default;
 
-    bool modemWake(void) override;
+    bool modemWake() override;
 
     bool connectInternet(uint32_t maxConnectionTime = 50000L) override;
-    void disconnectInternet(void) override;
+    void disconnectInternet() override;
 
-    uint32_t getNISTTime(void) override;
+    Client* createClient() override;
+    void    deleteClient(Client* client) override;
+    Client* createSecureClient() override;
+    void    deleteSecureClient(Client* client) override;
+    Client* createSecureClient(SSLAuthMode sslAuthMode,
+                               SSLVersion  sslVersion     = SSLVersion::TLS1_2,
+                               const char* CAcertName     = nullptr,
+                               const char* clientCertName = nullptr,
+                               const char* clientKeyName  = nullptr) override;
+    Client* createSecureClient(
+        const char* pskIdent, const char* psKey,
+        SSLVersion sslVersion = SSLVersion::TLS1_2) override;
+    Client* createSecureClient(
+        const char* pskTableName,
+        SSLVersion  sslVersion = SSLVersion::TLS1_2) override;
+
+    uint32_t getNISTTime() override;
 
     bool  getModemSignalQuality(int16_t& rssi, int16_t& percent) override;
     bool  getModemBatteryStats(int8_t& chargeState, int8_t& percent,
                                int16_t& milliVolts) override;
-    float getModemChipTemperature(void) override;
+    float getModemChipTemperature() override;
 
-    bool updateModemMetadata(void) override;
+    bool updateModemMetadata() override;
 
 #ifdef MS_DIGIXBEEWIFI_DEBUG_DEEP
     StreamDebugger _modemATDebugger;
@@ -158,14 +174,10 @@ class DigiXBeeWifi : public DigiXBee {
     /**
      * @brief Public reference to the TinyGSM modem.
      */
-    TinyGsm gsmModem;
-    /**
-     * @brief Public reference to the TinyGSM Client.
-     */
-    TinyGsmClient gsmClient;
+    TinyGsmXBee gsmModem;
 
  protected:
-    bool isInternetAvailable(void) override;
+    bool isInternetAvailable() override;
     /**
      * @copybrief loggerModem::extraModemSetup()
      *
@@ -175,8 +187,8 @@ class DigiXBeeWifi : public DigiXBee {
      *
      * @return True if the extra setup succeeded.
      */
-    bool extraModemSetup(void) override;
-    bool isModemAwake(void) override;
+    bool extraModemSetup() override;
+    bool isModemAwake() override;
 
  private:
 

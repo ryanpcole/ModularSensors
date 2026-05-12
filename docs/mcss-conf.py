@@ -46,10 +46,6 @@ LINKS_NAVBAR1 = [
                 # ],
             ),
             (
-                "Library Dependencies",
-                "page_library_dependencies",
-            ),
-            (
                 "Physical Dependencies",
                 "page_physical_dependencies",
             ),
@@ -63,34 +59,30 @@ LINKS_NAVBAR1 = [
             ),
         ],
     ),
-    (
-        "FAQs",
-        "page_faq",
-        [
-            (
-                "Processor Compatibility",
-                "page_processor_compatibility",
-            ),
-            (
-                "Arduino Streams and Software Serial",
-                "page_arduino_streams",
-            ),
-            (
-                "Power Draw over Data Lines",
-                "page_power_parasites",
-            ),
-            ("Decreasing Memory Footprint", "page_memory_use"),
-            (
-                "In-Library Debugging",
-                "page_code_debugging",
-            ),
-            (
-                "For Developers",
-                "page_for_developers",
-            ),
-        ],
-    ),
-    ("Topics", "topics", []),
+    # (
+    #     "FAQs",
+    #     "page_faq",
+    #     [
+    #         (
+    #             "Processor Compatibility",
+    #             "page_processor_compatibility",
+    #         ),
+    #         (
+    #             "Arduino Streams and Software Serial",
+    #             "page_arduino_streams",
+    #         ),
+    #         (
+    #             "Power Draw over Data Lines",
+    #             "page_power_parasites",
+    #         ),
+    #         ("Decreasing Memory Footprint", "page_memory_use"),
+    #         (
+    #             "In-Library Debugging",
+    #             "page_code_debugging",
+    #         ),
+    #     ],
+    # ),
+    ("Modules", "topics", []),
     (
         "Classes",
         "annotated",
@@ -105,51 +97,6 @@ LINKS_NAVBAR1 = [
         "Examples",
         "page_the_examples",
         [],
-        # [("Other Helper Sketches", "page_extra_helper_sketches")],
-        # [
-        #     (
-        #         "Basic Functionality",
-        #         "examples_basic",
-        #         [
-        #             ("Single Sensor", "example_single_sensor"),
-        #             ("Simple Logging", "example_simple_logging"),
-        #             ("Learn EnviroDIY", "example_learn_envirodiy"),
-        #         ],
-        #     ),
-        #     (
-        #         "Publishing Data",
-        #         "examples_publishing",
-        #         [
-        #             ("Publishing to Monitor My Watershed", "example_mmw"),
-        #             ("Publishing to ThingSpeak", "example_thingspeak"),
-        #         ],
-        #     ),
-        #     (
-        #         "Calculations and Complex Logging",
-        #         "examples_complex",
-        #         [
-        #             ("Barometric Pressure Correction", "example_baro_rho"),
-        #             ("Multiple Logging Intervals", "example_double_log"),
-        #             ("Minimizing Cell Data Usage", "example_data_saving"),
-        #         ],
-        #     ),
-        #     (
-        #         "DRWI Citizen Science",
-        #         "examples_drwi",
-        #         [
-        #             ("DRWI Mayfly 1.x", "example_drwi_mayfly1"),
-        #             ("DRWI EnviroDIY LTE", "example_drwi_ediylte"),
-        #             ("DRWI Digi LTE", "example_drwi_digilte"),
-        #             ("DRWI CitSci (2G", "example_drwi_2g"),
-        #             ("DRWI CitSci No Cellular", "example_drwi_no_cell"),
-        #         ],
-        #     ),
-        #     (
-        #         "Everything at Once",
-        #         "examples_everything",
-        #         [("The a la carte Menu", "example_menu"),],
-        #     ),
-        # ],
     ),
     (
         "More",

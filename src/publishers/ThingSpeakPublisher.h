@@ -13,36 +13,29 @@
 #ifndef SRC_PUBLISHERS_THINGSPEAKPUBLISHER_H_
 #define SRC_PUBLISHERS_THINGSPEAKPUBLISHER_H_
 
-// Debugging Statement
-// #define MS_THINGSPEAKPUBLISHER_DEBUG
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_THINGSPEAKPUBLISHER_DEBUG
 #define MS_DEBUGGING_STD "ThingSpeakPublisher"
 #endif
 
-/**
- * @brief The MQTT User Name
- *
- * @note The user name doesn't actually mean anything for ThingSpeak
- */
-#define THING_SPEAK_USER_NAME "MS"
-
-/**
- * @brief The MQTT Client Name
- *
- * @note The client name doesn't actually mean anything for ThingSpeak
- */
-#define THING_SPEAK_CLIENT_NAME "MS"
-
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
+
+// Include other in-library and external dependencies
 #include "dataPublisherBase.h"
 #include "PubSubClient.h"
 
 
 // ============================================================================
-//  Functions for the EnviroDIY data portal receivers.
+//  Functions for ThingSpeak.
 // ============================================================================
 /**
  * @brief The ThingSpeakPublisher subclass of dataPublisher for publishing data
@@ -52,7 +45,7 @@
  * array attached to your logger is __crucial__.  The results from the variables
  * in the VariableArray will be sent to ThingSpeak in the order they are in the
  * array; that is, the first variable in the array will be sent as Field1, the
- * second as Field2, etc.  Any UUID's or custom variable codes are ignored for
+ * second as Field2, etc.  Any UUIDs or custom variable codes are ignored for
  * ThingSpeak.  They will only appear in the header of your file on the SD card.
  * Giving a variable a custom variable code like "Field3" will **NOT** make that
  * variable field 3 on ThingSpeak.  The third variable in the array will always
@@ -65,10 +58,48 @@ class ThingSpeakPublisher : public dataPublisher {
  public:
     // Constructors
     /**
-     * @brief Construct a new ThingSpeak Publisher object with no members
-     * initialized.
+     * @brief Construct a new ThingSpeak Publisher object
+     *
+     * @param baseLogger The logger supplying the data to be published
+     * @param inClient An Arduino client instance to use to print data to.
+     * Allows the use of any type of client and multiple clients tied to a
+     * single TinyGSM modem instance
+     * @param thingSpeakClientName The client name for your MQTT device. This is
+     * probably the same as your MQTT device's user name.
+     * @param thingSpeakMQTTUser The user name for your MQTT device. This is
+     * probably the same as your MQTT device's client name.
+     * @param thingSpeakMQTTPassword The password for your MQTT device.
+     * @param thingSpeakChannelID The numeric channel id for your channel.
      */
-    ThingSpeakPublisher();
+    ThingSpeakPublisher(Logger& baseLogger, Client* inClient,
+                        const char* thingSpeakClientName,
+                        const char* thingSpeakMQTTUser,
+                        const char* thingSpeakMQTTPassword,
+                        const char* thingSpeakChannelID);
+    /**
+     * @brief Construct a new ThingSpeak Publisher object
+     *
+     * @param baseLogger The logger supplying the data to be published
+     * @param thingSpeakClientName The client name for your MQTT device. This is
+     * probably the same as your MQTT device's user name.
+     * @param thingSpeakMQTTUser The user name for your MQTT device. This is
+     * probably the same as your MQTT device's client name.
+     * @param thingSpeakMQTTPassword The password for your MQTT device.
+     * @param thingSpeakChannelID The numeric channel id for your channel.
+     */
+    ThingSpeakPublisher(Logger& baseLogger, const char* thingSpeakClientName,
+                        const char* thingSpeakMQTTUser,
+                        const char* thingSpeakMQTTPassword,
+                        const char* thingSpeakChannelID);
+    /**
+     * @brief Construct a new ThingSpeak Publisher object
+     *
+     * @param baseLogger The logger supplying the data to be published
+     * @param inClient An Arduino client instance to use to print data to.
+     * Allows the use of any type of client and multiple clients tied to a
+     * single TinyGSM modem instance
+     */
+    ThingSpeakPublisher(Logger& baseLogger, Client* inClient);
     /**
      * @brief Construct a new ThingSpeak Publisher object
      *
@@ -77,68 +108,46 @@ class ThingSpeakPublisher : public dataPublisher {
      * logger.
      *
      * @param baseLogger The logger supplying the data to be published
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
      */
-    explicit ThingSpeakPublisher(Logger& baseLogger, int sendEveryX = 1);
+    explicit ThingSpeakPublisher(Logger& baseLogger);
     /**
-     * @brief Construct a new ThingSpeak Publisher object
-     *
-     * @param baseLogger The logger supplying the data to be published
-     * @param inClient An Arduino client instance to use to print data to.
-     * Allows the use of any type of client and multiple clients tied to a
-     * single TinyGSM modem instance
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
+     * @brief Construct a new ThingSpeak Publisher object with all members set
+     * to defaults or null.
      */
-    ThingSpeakPublisher(Logger& baseLogger, Client* inClient,
-                        int sendEveryX = 1);
-    /**
-     * @brief Construct a new ThingSpeak Publisher object
-     *
-     * @param baseLogger The logger supplying the data to be published
-     * @param thingSpeakMQTTKey Your MQTT API Key from Account > MyProfile.
-     * @param thingSpeakChannelID The numeric channel id for your channel
-     * @param thingSpeakChannelKey The write API key for your channel
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
-     */
-    ThingSpeakPublisher(Logger& baseLogger, const char* thingSpeakMQTTKey,
-                        const char* thingSpeakChannelID,
-                        const char* thingSpeakChannelKey, int sendEveryX = 1);
-    /**
-     * @brief Construct a new ThingSpeak Publisher object
-     *
-     * @param baseLogger The logger supplying the data to be published
-     * @param inClient An Arduino client instance to use to print data to.
-     * Allows the use of any type of client and multiple clients tied to a
-     * single TinyGSM modem instance
-     * @param thingSpeakMQTTKey Your MQTT API Key from Account > MyProfile.
-     * @param thingSpeakChannelID The numeric channel id for your channel
-     * @param thingSpeakChannelKey The write API key for your channel
-     * @param sendEveryX Interval (in units of the logging interval) between
-     * attempted data transmissions. NOTE: not implemented by this publisher!
-     */
-    ThingSpeakPublisher(Logger& baseLogger, Client* inClient,
-                        const char* thingSpeakMQTTKey,
-                        const char* thingSpeakChannelID,
-                        const char* thingSpeakChannelKey, int sendEveryX = 1);
+    ThingSpeakPublisher();
     /**
      * @brief Destroy the ThingSpeak Publisher object
      */
-    virtual ~ThingSpeakPublisher();
+    ~ThingSpeakPublisher() override = default;
 
     // Returns the data destination
-    String getEndpoint(void) override {
+    String getEndpoint() override {
         return String(mqttServer);
     }
 
     /**
-     * @brief Set the MQTT API Key from Account > MyProfile
+     * @brief The client name for your MQTT device. This is probably the same as
+     * your MQTT device's user name.
      *
-     * @param thingSpeakMQTTKey Your MQTT API Key from Account > MyProfile.
+     * @param thingSpeakClientName The client name for your MQTT device. This is
+     * probably the same as your MQTT device's user name.
      */
-    void setMQTTKey(const char* thingSpeakMQTTKey);
+    void setMQTTClient(const char* thingSpeakClientName);
+
+    /**
+     * @brief Set the user name for your MQTT device.
+     *
+     * @param thingSpeakMQTTUser The user name for your MQTT device. This is
+     * probably the same as your MQTT device's client name.
+     */
+    void setUserName(const char* thingSpeakMQTTUser);
+
+    /**
+     * @brief Set the password for your MQTT device.
+     *
+     * @param thingSpeakMQTTPassword The password for your MQTT device.
+     */
+    void setPassword(const char* thingSpeakMQTTPassword);
 
     /**
      * @brief Set the ThingSpeak channel ID
@@ -148,45 +157,76 @@ class ThingSpeakPublisher : public dataPublisher {
     void setChannelID(const char* thingSpeakChannelID);
 
     /**
-     * @brief Set the channel's write API key.
+     * @brief Set the ThingSpeak user REST API key
      *
-     * @param thingSpeakChannelKey The write API key for your channel
+     * This is only used to update the field names on the ThingSpeak channel
+     * during the updateMetadata call at boot up. The *user* REST API key is
+     * **NOT** the same as your *channel* API keys or your MQTT connection
+     * credentials.  Find this key in your ThingSpeak account under Account > My
+     * Profile.
+     *
+     * @param thingSpeakAPIKey The ThingSpeak user REST API key
      */
-    void setChannelKey(const char* thingSpeakChannelKey);
+    void setRESTAPIKey(const char* thingSpeakAPIKey);
 
     /**
-     * @brief Sets all 3 ThingSpeak parameters
+     * @brief Sets all 4 ThingSpeak parameters
      *
-     * @param MQTTKey Your MQTT API Key from Account > MyProfile.
-     * @param channelID The numeric channel id for your channel
-     * @param channelKey The write API key for your channel
+     * @param thingSpeakClientName The client name for your MQTT device. This is
+     * probably the same as your MQTT device's user name.
+     * @param thingSpeakMQTTUser The user name for your MQTT device. This is
+     * probably the same as your MQTT device's client name.
+     * @param thingSpeakMQTTPassword The password for your MQTT device.
+     * @param thingSpeakChannelID The numeric channel id for your channel.
      */
-    void setThingSpeakParams(const char* MQTTKey, const char* channelID,
-                             const char* channelKey);
+    void setThingSpeakParams(const char* thingSpeakClientName,
+                             const char* thingSpeakMQTTUser,
+                             const char* thingSpeakMQTTPassword,
+                             const char* thingSpeakChannelID);
 
-    // A way to begin with everything already set
     /**
      * @copydoc dataPublisher::begin(Logger& baseLogger, Client* inClient)
-     * @param thingSpeakMQTTKey Your MQTT API Key from Account > MyProfile.
-     * @param thingSpeakChannelID The numeric channel id for your channel
-     * @param thingSpeakChannelKey The write API key for your channel
+     * @param thingSpeakClientName The client name for your MQTT device. This is
+     * probably the same as your MQTT device's user name.
+     * @param thingSpeakMQTTUser The user name for your MQTT device. This is
+     * probably the same as your MQTT device's client name.
+     * @param thingSpeakMQTTPassword The password for your MQTT device.
+     * @param thingSpeakChannelID The numeric channel id for your channel.
      */
     void begin(Logger& baseLogger, Client* inClient,
-               const char* thingSpeakMQTTKey, const char* thingSpeakChannelID,
-               const char* thingSpeakChannelKey);
+               const char* thingSpeakClientName, const char* thingSpeakMQTTUser,
+               const char* thingSpeakMQTTPassword,
+               const char* thingSpeakChannelID);
     /**
      * @copydoc dataPublisher::begin(Logger& baseLogger)
-     * @param thingSpeakMQTTKey Your MQTT API Key from Account > MyProfile.
-     * @param thingSpeakChannelID The numeric channel id for your channel
-     * @param thingSpeakChannelKey The write API key for your channel
+     * @param thingSpeakClientName The client name for your MQTT device. This is
+     * probably the same as your MQTT device's user name.
+     * @param thingSpeakMQTTUser The user name for your MQTT device. This is
+     * probably the same as your MQTT device's client name.
+     * @param thingSpeakMQTTPassword The password for your MQTT device.
+     * @param thingSpeakChannelID The numeric channel id for your channel.
      */
-    void begin(Logger& baseLogger, const char* thingSpeakMQTTKey,
-               const char* thingSpeakChannelID,
-               const char* thingSpeakChannelKey);
+    void begin(Logger& baseLogger, const char* thingSpeakClientName,
+               const char* thingSpeakMQTTUser,
+               const char* thingSpeakMQTTPassword,
+               const char* thingSpeakChannelID);
 
-    // This sends the data to ThingSpeak
-    // bool mqttThingSpeak(void);
-    int16_t publishData(Client* outClient) override;
+    /**
+     * @brief Utilize an attached modem to open a TCP connection to ThingSpeak
+     * and publish data over that connection.
+     *
+     * This depends on an internet connection already having been made and a
+     * client being available.
+     *
+     * @param outClient An Arduino client instance to use to print data to.
+     * Allows the use of any type of client and multiple clients tied to a
+     * single TinyGSM modem instance
+     * @param forceFlush Ask the publisher to flush buffered data immediately.
+     * @return The PubSubClient status code of the response.
+     */
+    int16_t publishData(Client* outClient,
+                        bool forceFlush = MS_ALWAYS_FLUSH_PUBLISHERS) override;
+    int16_t publishMetadata(Client* outClient) override;
 
  protected:
     /**
@@ -195,31 +235,45 @@ class ThingSpeakPublisher : public dataPublisher {
      *
      * @{
      */
-    static const char* mqttServer;      ///< The MQTT server
-    static const int   mqttPort;        ///< The MQTT port
-    static const char* mqttClientName;  ///< The MQTT client name
-    static const char* mqttUser;        ///< The MQTT user name
-                                        /**@}*/
+    static const char* apiHost;  ///< The REST API host
+    static const int   apiPort;  ///< The REST API port
+    static const char*
+        channelMetaResource;  ///< The REST API resource to put metadata to
+    static const char* mqttServer;  ///< The MQTT server
+    static const int   mqttPort;    ///< The MQTT port
+                                    /**@}*/
 
  private:
     // Keys for ThingSpeak
     /**
-     * @brief The MQTT key for ThingSpeak
+     * @brief The client name for your MQTT device. This is probably the same as
+     * your MQTT device's user name.
      */
-    const char* _thingSpeakMQTTKey = nullptr;
+    const char* _thingSpeakClientName = nullptr;
+    /**
+     * @brief The user name for your MQTT device. This is probably the same as
+     * your MQTT device's client name.
+     */
+    const char* _thingSpeakMQTTUser = nullptr;
+    /**
+     * @brief The password for your MQTT device
+     */
+    const char* _thingSpeakMQTTPassword = nullptr;
     /**
      * @brief The channel ID for ThingSpeak
      */
     const char* _thingSpeakChannelID = nullptr;
     /**
-     * @brief The channel key for ThingSpeak
+     * @brief The ThingSpeak REST API key
      */
-    const char* _thingSpeakChannelKey = nullptr;
+    const char* _thingSpeakAPIKey = nullptr;
     /**
-     * @brief Internal reference ot the PubSubClient instance for MQTT
+     * @brief Internal reference to the PubSubClient instance for MQTT
      * communication.
      */
     PubSubClient _mqttClient;
 };
 
 #endif  // SRC_PUBLISHERS_THINGSPEAKPUBLISHER_H_
+
+// cSpell:ignore setRESTAPIKey

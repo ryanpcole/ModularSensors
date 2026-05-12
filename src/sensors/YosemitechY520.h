@@ -60,7 +60,7 @@
 /**
  * @anchor sensor_y520_var_counts
  * @name Sensor Variable Counts
- * The number of variables that can be returned by a Yosemitch Y520
+ * The number of variables that can be returned by a Yosemitech Y520
  */
 /**@{*/
 /// @brief Sensor::_numReturnedValues; the Y520 can report 2 values.
@@ -72,7 +72,7 @@
 /**
  * @anchor sensor_y520_timing
  * @name Sensor Timing
- * The sensor timing for a Yosemitch Y520
+ * The sensor timing for a Yosemitech Y520
  */
 /**@{*/
 /// @brief Sensor::_warmUpTime_ms; time before sensor responds after power -
@@ -89,14 +89,18 @@
 /**
  * @anchor sensor_y520_cond
  * @name Conductivity
- * The conductivity variable from a Yosemitch Y520
+ * The conductivity variable from a Yosemitech Y520
  * - Range is 1 µS/cm to 200 mS/cm
  * - Accuracy is ± 1 % Full Scale
  *
  * {{ @ref YosemitechY520_Cond::YosemitechY520_Cond }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; conductivity should have 1
+/// @brief Minimum conductivity; 1 µS/cm
+#define Y520_COND_MIN_USCM 1
+/// @brief Maximum conductivity; 200000 µS/cm (200 mS/cm)
+#define Y520_COND_MAX_USCM 200000
+/// @brief Decimal places in string representation; conductivity should have 1
 /// - resolution is 0.1 µS/cm.
 #define Y520_COND_RESOLUTION 1
 /// @brief Sensor variable number; conductivity is stored in sensorValues[0].
@@ -116,14 +120,18 @@
 /**
  * @anchor sensor_y520_temp
  * @name Temperature
- * The temperature variable from a Yosemitch Y520
+ * The temperature variable from a Yosemitech Y520
  * - Range is 0°C to + 50°C
  * - Accuracy is ± 0.2°C
  *
  * {{ @ref YosemitechY520_Temp::YosemitechY520_Temp }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; temperature should have 1 -
+/// @brief Minimum temperature; 0°C
+#define Y520_TEMP_MIN_C 0
+/// @brief Maximum temperature; 50°C
+#define Y520_TEMP_MAX_C 50
+/// @brief Decimal places in string representation; temperature should have 1 -
 /// resolution is 0.1°C.
 #define Y520_TEMP_RESOLUTION 1
 /// @brief Sensor variable number; temperature is stored in sensorValues[1].
@@ -194,7 +202,7 @@ class YosemitechY520 : public YosemitechParent {
     /**
      * @brief Destroy the Yosemitech Y520 object
      */
-    ~YosemitechY520() {}
+    ~YosemitechY520() override = default;
 };
 
 
@@ -222,23 +230,12 @@ class YosemitechY520_Cond : public Variable {
     explicit YosemitechY520_Cond(YosemitechY520* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y520_COND_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y520_COND_VAR_NUM,
-                   (uint8_t)Y520_COND_RESOLUTION, Y520_COND_VAR_NAME,
-                   Y520_COND_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY520_Cond object.
-     *
-     * @note This must be tied with a parent YosemitechY520 before it can be
-     * used.
-     */
-    YosemitechY520_Cond()
-        : Variable((const uint8_t)Y520_COND_VAR_NUM,
-                   (uint8_t)Y520_COND_RESOLUTION, Y520_COND_VAR_NAME,
-                   Y520_COND_UNIT_NAME, Y520_COND_DEFAULT_CODE) {}
+        : Variable(parentSense, Y520_COND_VAR_NUM, Y520_COND_RESOLUTION,
+                   Y520_COND_VAR_NAME, Y520_COND_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY520_Cond object - no action needed.
      */
-    ~YosemitechY520_Cond() {}
+    ~YosemitechY520_Cond() override = default;
 };
 
 
@@ -266,23 +263,12 @@ class YosemitechY520_Temp : public Variable {
     explicit YosemitechY520_Temp(YosemitechY520* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y520_TEMP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y520_TEMP_VAR_NUM,
-                   (uint8_t)Y520_TEMP_RESOLUTION, Y520_TEMP_VAR_NAME,
-                   Y520_TEMP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY520_Temp object.
-     *
-     * @note This must be tied with a parent YosemitechY520 before it can be
-     * used.
-     */
-    YosemitechY520_Temp()
-        : Variable((const uint8_t)Y520_TEMP_VAR_NUM,
-                   (uint8_t)Y520_TEMP_RESOLUTION, Y520_TEMP_VAR_NAME,
-                   Y520_TEMP_UNIT_NAME, Y520_TEMP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y520_TEMP_VAR_NUM, Y520_TEMP_RESOLUTION,
+                   Y520_TEMP_VAR_NAME, Y520_TEMP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY520_Temp object - no action needed.
      */
-    ~YosemitechY520_Temp() {}
+    ~YosemitechY520_Temp() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_YOSEMITECHY520_H_

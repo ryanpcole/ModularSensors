@@ -12,18 +12,6 @@
  * ======================================================================= */
 
 // ==========================================================================
-//  Defines for TinyGSM
-// ==========================================================================
-/** Start [defines] */
-#ifndef TINY_GSM_RX_BUFFER
-#define TINY_GSM_RX_BUFFER 64
-#endif
-#ifndef TINY_GSM_YIELD_MS
-#define TINY_GSM_YIELD_MS 2
-#endif
-/** End [defines] */
-
-// ==========================================================================
 //  Include the libraries required for any data logger
 // ==========================================================================
 /** Start [includes] */
@@ -40,11 +28,11 @@
 // ==========================================================================
 /** Start [logging_options] */
 // The name of this program file
-const char* sketchName = "logging_to MMW.ino";
+const char* sketchName = "logging_to_MMW.ino";
 // Logger ID, also becomes the prefix for the name of the data file on SD card
-const char* LoggerID = "XXXXX";
+const char* LoggerID = "YourLoggerID";
 // How frequently (in minutes) to log data
-const uint8_t loggingInterval = 15;
+const int8_t loggingInterval = 15;
 // Your logger's timezone.
 const int8_t timeZone = -5;  // Eastern Standard Time
 // NOTE:  Daylight savings time will not be applied!  Please use standard time!
@@ -54,7 +42,7 @@ const int8_t timeZone = -5;  // Eastern Standard Time
 const int32_t serialBaud = 115200;  // Baud rate for debugging
 const int8_t  greenLED   = 8;       // Pin for the green LED
 const int8_t  redLED     = 9;       // Pin for the red LED
-const int8_t  buttonPin  = 21;      // Pin for debugging mode (ie, button pin)
+const int8_t  buttonPin  = 21;      // Pin for debugging mode (i.e., button pin)
 const int8_t  wakePin    = 31;  // MCU interrupt/alarm pin to wake from sleep
 // Mayfly 0.x D31 = A7
 // Set the wake pin to -1 if you do not want the main processor to sleep.
@@ -90,7 +78,7 @@ const int8_t modemLEDPin = redLED;    // MCU pin connected an LED to show modem
                                       // status (-1 if unconnected)
 
 // Network connection information
-const char* apn = "xxxxx";  // The APN for the gprs connection
+const char* apn = "YourAPN";  // The APN for the gprs connection
 
 // NOTE:  If possible, use the `STATUS/SLEEP_not` (XBee pin 13) for status, but
 // the `CTS` pin can also be used if necessary
@@ -105,13 +93,13 @@ DigiXBeeCellularTransparent modem = modemXBCT;
 // ==========================================================================
 //  Using the Processor as a Sensor
 // ==========================================================================
-/** Start [processor_sensor] */
+/** Start [processor_stats] */
 #include <sensors/ProcessorStats.h>
 
 // Create the main processor chip "sensor" - for general metadata
 const char*    mcuBoardVersion = "v1.1";
 ProcessorStats mcuBoard(mcuBoardVersion);
-/** End [processor_sensor] */
+/** End [processor_stats] */
 
 
 // ==========================================================================
@@ -134,7 +122,7 @@ MaximDS3231 ds3231(1);
 const int8_t I2CPower    = sensorPowerPin;  // Power pin (-1 if unconnected)
 uint8_t      BMEi2c_addr = 0x76;
 // The BME280 can be addressed either as 0x77 (Adafruit default) or 0x76 (Grove
-// default) Either can be physically mofidied for the other address
+// default) Either can be physically modified for the other address
 
 // Create a Bosch BME280 sensor object
 BoschBME280 bme280(I2CPower, BMEi2c_addr);
@@ -204,18 +192,18 @@ Logger dataLogger(LoggerID, loggingInterval, &varArray);
 //  Creating Data Publisher[s]
 // ==========================================================================
 /** Start [publishers] */
-// A Publisher to Monitor My Watershed / EnviroDIY Data Sharing Portal
+// A Publisher to Monitor My Watershed
 // Device registration and sampling feature information can be obtained after
-// registration at https://monitormywatershed.org or https://data.envirodiy.org
+// registration at https://monitormywatershed.org
 const char* registrationToken =
     "12345678-abcd-1234-ef00-1234567890ab";  // Device registration token
 const char* samplingFeature =
     "12345678-abcd-1234-ef00-1234567890ab";  // Sampling feature UUID
 
-// Create a data publisher for the Monitor My Watershed/EnviroDIY POST endpoint
-#include <publishers/EnviroDIYPublisher.h>
-EnviroDIYPublisher EnviroDIYPOST(dataLogger, &modem.gsmClient,
-                                 registrationToken, samplingFeature);
+// Create a data publisher for the Monitor My Watershed POST endpoint
+#include <publishers/MonitorMyWatershedPublisher.h>
+MonitorMyWatershedPublisher MonitorMWPost(dataLogger, registrationToken,
+                                          samplingFeature);
 /** End [publishers] */
 
 
@@ -224,7 +212,7 @@ EnviroDIYPublisher EnviroDIYPOST(dataLogger, &modem.gsmClient,
 // ==========================================================================
 /** Start [working_functions] */
 // Flashes the LED's on the primary board
-void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
+void greenRedFlash(uint8_t numFlash = 4, uint8_t rate = 75) {
     for (uint8_t i = 0; i < numFlash; i++) {
         digitalWrite(greenLED, HIGH);
         digitalWrite(redLED, LOW);
@@ -239,7 +227,7 @@ void greenredflash(uint8_t numFlash = 4, uint8_t rate = 75) {
 // Reads the battery voltage
 // NOTE: This will actually return the battery level from the previous update!
 float getBatteryVoltage() {
-    if (mcuBoard.sensorValues[0] == -9999) mcuBoard.update();
+    if (mcuBoard.sensorValues[0] == MS_INVALID_VALUE) mcuBoard.update();
     return mcuBoard.sensorValues[0];
 }
 /** End [working_functions] */
@@ -250,17 +238,15 @@ float getBatteryVoltage() {
 // ==========================================================================
 /** Start [setup] */
 void setup() {
-// Wait for USB connection to be established by PC
-// NOTE:  Only use this when debugging - if not connected to a PC, this
-// could prevent the script from starting
-#if defined(SERIAL_PORT_USBVIRTUAL)
-    while (!SERIAL_PORT_USBVIRTUAL && (millis() < 10000)) {
-        // wait
-    }
-#endif
-
     // Start the primary serial connection
     Serial.begin(serialBaud);
+
+// Wait for USB connection to be established by PC
+// NOTE:  Only use this when debugging - if not connected to a PC, this adds an
+// unnecessary startup delay
+#if defined(SERIAL_PORT_USBVIRTUAL)
+    while (!SERIAL_PORT_USBVIRTUAL && (millis() < 10000L)) { delay(10); }
+#endif
 
     // Print a start-up note to the first serial port
     Serial.print(F("Now running "));
@@ -293,13 +279,13 @@ void setup() {
     pinMode(redLED, OUTPUT);
     digitalWrite(redLED, LOW);
     // Blink the LEDs to show the board is on and starting up
-    greenredflash();
+    greenRedFlash();
 
     // Set the timezones for the logger/data and the RTC
     // Logging in the given time zone
     Logger::setLoggerTimeZone(timeZone);
     // It is STRONGLY RECOMMENDED that you set the RTC to be in UTC (UTC+0)
-    Logger::setRTCTimeZone(0);
+    loggerClock::setRTCOffset(0);
 
     // Attach the modem and information pins to the logger
     dataLogger.attachModem(modem);
@@ -318,7 +304,7 @@ void setup() {
     }
 
     // Sync the clock if it isn't valid or we have battery to spare
-    if (getBatteryVoltage() > 3.55 || !dataLogger.isRTCSane()) {
+    if (getBatteryVoltage() > 3.55 || !loggerClock::isRTCSane()) {
         // Synchronize the RTC with NIST
         // This will also set up the modem
         dataLogger.syncRTC();
@@ -366,3 +352,5 @@ void loop() {
     }
 }
 /** End [loop] */
+
+// cspell: ignore XBCT

@@ -50,8 +50,8 @@
  * Digital communication with Keller sensors configured for SDI12 communication
  * protocols are not supported by this library.
  *
- * The sensor constructors require as input: the sensor modbus address,  a
- * stream instance for data (ie, ```Serial```), and one or two power pins.  The
+ * The sensor constructors require as input: the sensor modbus address, a
+ * stream instance for data (i.e., ```Serial```), and one or two power pins.  The
  * Arduino pin controlling the receive and data enable on your RS485-to-TTL
  * adapter and the number of readings to average are optional.  (Use -1 for the
  * second power pin and -1 for the enable pin if these don't apply and you want
@@ -79,22 +79,27 @@
 #ifndef SRC_SENSORS_KELLERPARENT_H_
 #define SRC_SENSORS_KELLERPARENT_H_
 
-// Debugging Statement
-// #define MS_KELLERPARENT_DEBUG
-// #define MS_KELLERPARENT_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_KELLERPARENT_DEBUG
 #define MS_DEBUGGING_STD "KellerParent"
 #endif
-
 #ifdef MS_KELLERPARENT_DEBUG_DEEP
 #define MS_DEBUGGING_DEEP "KellerParent"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
 #undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "SensorBase.h"
 #include <KellerModbus.h>
@@ -226,12 +231,9 @@ class KellerParent : public Sensor {
     /**
      * @brief Destroy the Keller Parent object - no action taken
      */
-    virtual ~KellerParent();
+    ~KellerParent() override = default;
 
-    /**
-     * @copydoc Sensor::getSensorLocation()
-     */
-    String getSensorLocation(void) override;
+    String getSensorLocation() override;
 
     /**
      * @brief Do any one-time preparations needed before the sensor will be able
@@ -244,16 +246,16 @@ class KellerParent : public Sensor {
      *
      * @return True if the setup was successful.
      */
-    bool setup(void) override;
-
-    // Override these to use two power pins
-    void powerUp(void) override;
-    void powerDown(void) override;
+    bool setup() override;
 
     /**
-     * @copydoc Sensor::addSingleMeasurementResult()
+     * @brief Empty and flush the stream before sleeping.
+     *
+     * @return True if sleep was successful.
      */
-    bool addSingleMeasurementResult(void) override;
+    bool sleep() override;
+
+    bool addSingleMeasurementResult() override;
 
  private:
     /**
@@ -270,7 +272,7 @@ class KellerParent : public Sensor {
      */
     byte _modbusAddress;
     /**
-     * @brief Private reference to the stream for communciation with the
+     * @brief Private reference to the stream for communication with the
      * Keller sensor.
      */
     Stream* _stream;
@@ -279,10 +281,8 @@ class KellerParent : public Sensor {
      * pin.
      */
     int8_t _RS485EnablePin;
-    /**
-     * @brief Private reference to the power pin fro the RS-485 adapter.
-     */
-    int8_t _powerPin2;
 };
 /**@}*/
 #endif  // SRC_SENSORS_KELLERPARENT_H_
+
+// cSpell:words ksensor

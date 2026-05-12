@@ -76,7 +76,7 @@
 /**
  * @anchor sensor_y504_timing
  * @name Sensor Timing
- * The sensor timing for a Yosemitch Y504
+ * The sensor timing for a Yosemitech Y504
  */
 /**@{*/
 /// @brief Sensor::_warmUpTime_ms; time before sensor responds after power -
@@ -93,14 +93,18 @@
 /**
  * @anchor sensor_y504_dopercent
  * @name Dissolved Oxygen Percent Saturation
- * The dissolved oxygen percent saturation variable from a Yosemitch Y504
+ * The dissolved oxygen percent saturation variable from a Yosemitech Y504
  * - Range is 0-20mg/L or 0-200% Saturation
  * - Accuracy is ± 1 %
  *
  * {{ @ref YosemitechY504_DOpct::YosemitechY504_DOpct }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; dissolved oxygen percent
+/// @brief Minimum dissolved oxygen percent saturation; 0% saturation
+#define Y504_DOPCT_MIN_PCT 0
+/// @brief Maximum dissolved oxygen percent saturation; 200% saturation
+#define Y504_DOPCT_MAX_PCT 200
+/// @brief Decimal places in string representation; dissolved oxygen percent
 /// should have 1 - resolution is 0.1%.
 #define Y504_DOPCT_RESOLUTION 1
 /// @brief Sensor variable number; dissolved oxygen percent is stored in
@@ -121,14 +125,18 @@
 /**
  * @anchor sensor_y504_temp
  * @name Temperature
- * The temperature variable from a Yosemitch Y504
+ * The temperature variable from a Yosemitech Y504
  * - Range is 0°C to + 50°C
  * - Accuracy is ± 0.2°C
  *
  * {{ @ref YosemitechY504_Temp::YosemitechY504_Temp }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; temperature should have 1 -
+/// @brief Minimum temperature; 0°C
+#define Y504_TEMP_MIN_C 0
+/// @brief Maximum temperature; 50°C
+#define Y504_TEMP_MAX_C 50
+/// @brief Decimal places in string representation; temperature should have 1 -
 /// resolution is 0.1°C.
 #define Y504_TEMP_RESOLUTION 1
 /// @brief Sensor variable number; temperature is stored in sensorValues[1].
@@ -148,14 +156,18 @@
 /**
  * @anchor sensor_y504_domgl
  * @name Dissolved Oxygen Concentration
- * The dissolved oxygen concentration variable from a Yosemitch Y504
+ * The dissolved oxygen concentration variable from a Yosemitech Y504
  * - Range is 0-20mg/L or 0-200% Saturation
  * - Accuracy is ± 1 %
  *
  * {{ @ref YosemitechY504_DOmgL::YosemitechY504_DOmgL }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; dissolved oxygen
+/// @brief Minimum dissolved oxygen concentration; 0 mg/L
+#define Y504_DOMGL_MIN_MGPL 0
+/// @brief Maximum dissolved oxygen concentration; 20 mg/L
+#define Y504_DOMGL_MAX_MGPL 20
+/// @brief Decimal places in string representation; dissolved oxygen
 /// concentration should have 2 - resolution is 0.01 mg/L.
 #define Y504_DOMGL_RESOLUTION 2
 /// @brief Sensor variable number; dissolved oxygen concentration is stored in
@@ -227,7 +239,7 @@ class YosemitechY504 : public YosemitechParent {
     /**
      * @brief Destroy the Yosemitech Y504 object
      */
-    ~YosemitechY504() {}
+    ~YosemitechY504() override = default;
 };
 
 
@@ -255,23 +267,12 @@ class YosemitechY504_DOpct : public Variable {
     explicit YosemitechY504_DOpct(YosemitechY504* parentSense,
                                   const char*     uuid = "",
                                   const char* varCode = Y504_DOPCT_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y504_DOPCT_VAR_NUM,
-                   (uint8_t)Y504_DOPCT_RESOLUTION, Y504_DOPCT_VAR_NAME,
-                   Y504_DOPCT_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY504_DOpct object.
-     *
-     * @note This must be tied with a parent YosemitechY504 before it can be
-     * used.
-     */
-    YosemitechY504_DOpct()
-        : Variable((const uint8_t)Y504_DOPCT_VAR_NUM,
-                   (uint8_t)Y504_DOPCT_RESOLUTION, Y504_DOPCT_VAR_NAME,
-                   Y504_DOPCT_UNIT_NAME, Y504_DOPCT_DEFAULT_CODE) {}
+        : Variable(parentSense, Y504_DOPCT_VAR_NUM, Y504_DOPCT_RESOLUTION,
+                   Y504_DOPCT_VAR_NAME, Y504_DOPCT_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY504_DOpct object - no action needed.
      */
-    ~YosemitechY504_DOpct() {}
+    ~YosemitechY504_DOpct() override = default;
 };
 
 
@@ -299,23 +300,12 @@ class YosemitechY504_Temp : public Variable {
     explicit YosemitechY504_Temp(YosemitechY504* parentSense,
                                  const char*     uuid = "",
                                  const char* varCode  = Y504_TEMP_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y504_TEMP_VAR_NUM,
-                   (uint8_t)Y504_TEMP_RESOLUTION, Y504_TEMP_VAR_NAME,
-                   Y504_TEMP_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY504_Temp object.
-     *
-     * @note This must be tied with a parent YosemitechY504 before it can be
-     * used.
-     */
-    YosemitechY504_Temp()
-        : Variable((const uint8_t)Y504_TEMP_VAR_NUM,
-                   (uint8_t)Y504_TEMP_RESOLUTION, Y504_TEMP_VAR_NAME,
-                   Y504_TEMP_UNIT_NAME, Y504_TEMP_DEFAULT_CODE) {}
+        : Variable(parentSense, Y504_TEMP_VAR_NUM, Y504_TEMP_RESOLUTION,
+                   Y504_TEMP_VAR_NAME, Y504_TEMP_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY504_Temp object - no action needed.
      */
-    ~YosemitechY504_Temp() {}
+    ~YosemitechY504_Temp() override = default;
 };
 
 
@@ -343,23 +333,12 @@ class YosemitechY504_DOmgL : public Variable {
     explicit YosemitechY504_DOmgL(YosemitechY504* parentSense,
                                   const char*     uuid = "",
                                   const char* varCode = Y504_DOMGL_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)Y504_DOMGL_VAR_NUM,
-                   (uint8_t)Y504_DOMGL_RESOLUTION, Y504_DOMGL_VAR_NAME,
-                   Y504_DOMGL_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new YosemitechY504_DOmgL object.
-     *
-     * @note This must be tied with a parent YosemitechY504 before it can be
-     * used.
-     */
-    YosemitechY504_DOmgL()
-        : Variable((const uint8_t)Y504_DOMGL_VAR_NUM,
-                   (uint8_t)Y504_DOMGL_RESOLUTION, Y504_DOMGL_VAR_NAME,
-                   Y504_DOMGL_UNIT_NAME, Y504_DOMGL_DEFAULT_CODE) {}
+        : Variable(parentSense, Y504_DOMGL_VAR_NUM, Y504_DOMGL_RESOLUTION,
+                   Y504_DOMGL_VAR_NAME, Y504_DOMGL_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the YosemitechY504_DOmgL object - no action needed.
      */
-    ~YosemitechY504_DOmgL() {}
+    ~YosemitechY504_DOmgL() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_YOSEMITECHY504_H_

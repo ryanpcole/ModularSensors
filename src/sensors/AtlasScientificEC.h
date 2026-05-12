@@ -3,7 +3,7 @@
  * @copyright Stroud Water Research Center
  * Part of the EnviroDIY ModularSensors library for Arduino.
  * This library is published under the BSD-3 license.
- * @author Initial developement for Atlas Sensors was done by Adam Gold
+ * @author Initial development for Atlas Sensors was done by Adam Gold
  * Files were edited by Sara Damiano <sdamiano@stroudcenter.org>
  *
  * @brief Contains the AtlasScientificCO2 subclass of the AtlasParent sensor
@@ -25,7 +25,7 @@
  * @tableofcontents
  * @m_footernavigation
  *
- * The Atlas Scientifc Conductivity sensor outputs raw conductivity, TDS,
+ * The Atlas Scientific Conductivity sensor outputs raw conductivity, TDS,
  * salinity, and specific gravity
  * - Accuracy is ± 2%
  * - Range is 0.07 − 500,000+ μS/cm
@@ -57,21 +57,42 @@
 #ifndef SRC_SENSORS_ATLASSCIENTIFICEC_H_
 #define SRC_SENSORS_ATLASSCIENTIFICEC_H_
 
-// Debugging Statement
-// #define MS_ATLASSCIENTIFICEC_DEBUG
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_ATLASSCIENTIFICEC_DEBUG
 #define MS_DEBUGGING_STD "AtlasScientificEC"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "sensors/AtlasParent.h"
 
 /** @ingroup sensor_atlas_cond */
 /**@{*/
+
+/**
+ * @anchor sensor_atlas_cond_config
+ * @name Configuration Defines
+ * Defines to configure and set the address of the Atlas conductivity
+ * sensor
+ */
+/**@{*/
+#ifndef ATLAS_COND_I2C_ADDR
+/// @brief The default I2C address of the Atlas conductivity sensor is 0x64
+/// (100)
+#define ATLAS_COND_I2C_ADDR 0x64
+#endif
+/**@}*/
 
 /**
  * @anchor sensor_atlas_cond_var_counts
@@ -89,21 +110,9 @@
 /**@}*/
 
 /**
- * @anchor sensor_atlas_cond_config
- * @name Configuration Defines
- * Defines to configure and set the address of the Atlas conductivity
- * sensor
- */
-/**@{*/
-/// @brief The default I2C address of the Atlas conductivity sensor is 0x64
-/// (100)
-#define ATLAS_COND_I2C_ADDR 0x64
-/**@}*/
-
-/**
  * @anchor sensor_atlas_cond_timing
  * @name Sensor Timing
- * The sensor timing for an Atlas EC (conducticity) sensor
+ * The sensor timing for an Atlas EC (conductivity) sensor
  */
 /**@{*/
 /**
@@ -128,14 +137,18 @@
 /**
  * @anchor sensor_atlas_cond_cond
  * @name Conductivity
- * The conductivity variable from an Atlas EC (conducticity) sensor
+ * The conductivity variable from an Atlas EC (conductivity) sensor
  * - Accuracy is ± 2%
  * - Range is 0.07 − 500,000+ μS/cm
  *
  * {{ @ref AtlasScientificEC_Cond::AtlasScientificEC_Cond }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; conductivity should have 3.
+/// @brief Minimum electrical conductivity in microsiemens per centimeter.
+#define ATLAS_COND_MIN_USCM 0.07
+/// @brief Maximum electrical conductivity in microsiemens per centimeter.
+#define ATLAS_COND_MAX_USCM 500000.0
+/// @brief Decimal places in string representation; conductivity should have 3.
 #define ATLAS_COND_RESOLUTION 3
 /// @brief Sensor variable number; conductivity is stored in sensorValues[0].
 #define ATLAS_COND_VAR_NUM 0
@@ -154,14 +167,18 @@
 /**
  * @anchor sensor_atlas_cond_tds
  * @name Total Dissolved Solids
- * The TDS variable from an Atlas EC (conducticity) sensor
+ * The TDS variable from an Atlas EC (conductivity) sensor
  * - Accuracy is ± 2%
  * - Range is 0.07 − 500,000+ μS/cm
  *
  * {{ @ref AtlasScientificEC_TDS::AtlasScientificEC_TDS }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; TDS should have 3.
+/// @brief Minimum total dissolved solids in parts per million.
+#define ATLAS_TDS_MIN_PPM 0.01
+/// @brief Maximum total dissolved solids in parts per million.
+#define ATLAS_TDS_MAX_PPM 300000.0
+/// @brief Decimal places in string representation; TDS should have 3.
 #define ATLAS_TDS_RESOLUTION 3
 /// @brief Sensor variable number; TDS is stored in sensorValues[1].
 #define ATLAS_TDS_VAR_NUM 1
@@ -180,14 +197,18 @@
 /**
  * @anchor sensor_atlas_cond_salinity
  * @name Salinity
- * The salinity variable from an Atlas EC (conducticity) sensor
+ * The salinity variable from an Atlas EC (conductivity) sensor
  * - Accuracy is ± 2%
- * - Range is 0.07 − 500,000+ μS/cm
+ * - Range is 0 - 42 PSU
  *
  * {{ @ref AtlasScientificEC_Salinity::AtlasScientificEC_Salinity }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; salinity should have 3.
+/// @brief Minimum salinity in practical salinity units.
+#define ATLAS_SALINITY_MIN_PSU 0.0
+/// @brief Maximum salinity in practical salinity units.
+#define ATLAS_SALINITY_MAX_PSU 42.0
+/// @brief Decimal places in string representation; salinity should have 3.
 #define ATLAS_SALINITY_RESOLUTION 3
 /// @brief Sensor variable number; salinity is stored in sensorValues[2].
 #define ATLAS_SALINITY_VAR_NUM 2
@@ -207,7 +228,7 @@
 /**
  * @anchor sensor_atlas_cond_sg
  * @name Specific Gravity
- * The specific gravity variable from an Atlas EC (conducticity) sensor
+ * The specific gravity variable from an Atlas EC (conductivity) sensor
  * - Accuracy is ± 2%
  * - Range is 0.07 − 500,000+ μS/cm
  *
@@ -215,7 +236,11 @@
  */
 /* clang-format on */
 /**@{*/
-/// @brief Decimals places in string representation; specific gravity should
+/// @brief Minimum specific gravity (dimensionless).
+#define ATLAS_SG_MIN 0.99
+/// @brief Maximum specific gravity (dimensionless).
+#define ATLAS_SG_MAX 1.042
+/// @brief Decimal places in string representation; specific gravity should
 /// have 3.
 #define ATLAS_SG_RESOLUTION 3
 /// @brief Sensor variable number; specific gravity is stored in
@@ -295,7 +320,7 @@ class AtlasScientificEC : public AtlasParent {
     /**
      * @brief Destroy the Atlas Scientific EC object
      */
-    ~AtlasScientificEC();
+    ~AtlasScientificEC() override = default;
 
     /**
      * @brief Do any one-time preparations needed before the sensor will be able
@@ -307,7 +332,7 @@ class AtlasScientificEC : public AtlasParent {
      *
      * @return True if the setup was successful.
      */
-    bool setup(void) override;
+    bool setup() override;
 };
 
 /* clang-format off */
@@ -334,23 +359,12 @@ class AtlasScientificEC_Cond : public Variable {
     explicit AtlasScientificEC_Cond(
         AtlasScientificEC* parentSense, const char* uuid = "",
         const char* varCode = ATLAS_COND_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ATLAS_COND_VAR_NUM,
-                   (uint8_t)ATLAS_COND_RESOLUTION, ATLAS_COND_VAR_NAME,
-                   ATLAS_COND_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new AtlasScientificEC_Cond object.
-     *
-     * @note This must be tied with a parent AtlasScientificEC before it can be
-     * used.
-     */
-    AtlasScientificEC_Cond()
-        : Variable((const uint8_t)ATLAS_COND_VAR_NUM,
-                   (uint8_t)ATLAS_COND_RESOLUTION, ATLAS_COND_VAR_NAME,
-                   ATLAS_COND_UNIT_NAME, ATLAS_COND_DEFAULT_CODE) {}
+        : Variable(parentSense, ATLAS_COND_VAR_NUM, ATLAS_COND_RESOLUTION,
+                   ATLAS_COND_VAR_NAME, ATLAS_COND_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the AtlasScientificEC_Cond object - no action needed.
      */
-    ~AtlasScientificEC_Cond() {}
+    ~AtlasScientificEC_Cond() override = default;
 };
 
 /* clang-format off */
@@ -377,23 +391,12 @@ class AtlasScientificEC_TDS : public Variable {
     explicit AtlasScientificEC_TDS(AtlasScientificEC* parentSense,
                                    const char*        uuid = "",
                                    const char* varCode = ATLAS_TDS_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ATLAS_TDS_VAR_NUM,
-                   (uint8_t)ATLAS_TDS_RESOLUTION, ATLAS_TDS_VAR_NAME,
-                   ATLAS_TDS_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new AtlasScientificEC_TDS object.
-     *
-     * @note This must be tied with a parent AtlasScientificEC before it can be
-     * used.
-     */
-    AtlasScientificEC_TDS()
-        : Variable((const uint8_t)ATLAS_TDS_VAR_NUM,
-                   (uint8_t)ATLAS_TDS_RESOLUTION, ATLAS_TDS_VAR_NAME,
-                   ATLAS_TDS_UNIT_NAME, ATLAS_TDS_DEFAULT_CODE) {}
+        : Variable(parentSense, ATLAS_TDS_VAR_NUM, ATLAS_TDS_RESOLUTION,
+                   ATLAS_TDS_VAR_NAME, ATLAS_TDS_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the AtlasScientificEC_TDS object - no action needed.
      */
-    ~AtlasScientificEC_TDS() {}
+    ~AtlasScientificEC_TDS() override = default;
 };
 
 /* clang-format off */
@@ -420,24 +423,14 @@ class AtlasScientificEC_Salinity : public Variable {
     explicit AtlasScientificEC_Salinity(
         AtlasScientificEC* parentSense, const char* uuid = "",
         const char* varCode = ATLAS_SALINITY_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ATLAS_SALINITY_VAR_NUM,
-                   (uint8_t)ATLAS_SALINITY_RESOLUTION, ATLAS_SALINITY_VAR_NAME,
+        : Variable(parentSense, ATLAS_SALINITY_VAR_NUM,
+                   ATLAS_SALINITY_RESOLUTION, ATLAS_SALINITY_VAR_NAME,
                    ATLAS_SALINITY_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new AtlasScientificEC_Salinity object.
-     *
-     * @note This must be tied with a parent AtlasScientificEC before it can be
-     * used.
-     */
-    AtlasScientificEC_Salinity()
-        : Variable((const uint8_t)ATLAS_SALINITY_VAR_NUM,
-                   (uint8_t)ATLAS_SALINITY_RESOLUTION, ATLAS_SALINITY_VAR_NAME,
-                   ATLAS_SALINITY_UNIT_NAME, ATLAS_SALINITY_DEFAULT_CODE) {}
     /**
      * @brief Destroy the AtlasScientificEC_Salinity() object - no action
      * needed.
      */
-    ~AtlasScientificEC_Salinity() {}
+    ~AtlasScientificEC_Salinity() override = default;
 };
 
 /* clang-format off */
@@ -464,24 +457,13 @@ class AtlasScientificEC_SpecificGravity : public Variable {
     explicit AtlasScientificEC_SpecificGravity(
         AtlasScientificEC* parentSense, const char* uuid = "",
         const char* varCode = ATLAS_SG_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)ATLAS_SG_VAR_NUM,
-                   (uint8_t)ATLAS_SG_RESOLUTION, ATLAS_SG_VAR_NAME,
-                   ATLAS_SG_UNIT_NAME, varCode, uuid) {}
-    /**
-     * @brief Construct a new AtlasScientificEC_SpecificGravity object.
-     *
-     * @note This must be tied with a parent AtlasScientificEC before it can be
-     * used.
-     */
-    AtlasScientificEC_SpecificGravity()
-        : Variable((const uint8_t)ATLAS_SG_VAR_NUM,
-                   (uint8_t)ATLAS_SG_RESOLUTION, ATLAS_SG_VAR_NAME,
-                   ATLAS_SG_UNIT_NAME, ATLAS_SG_DEFAULT_CODE) {}
+        : Variable(parentSense, ATLAS_SG_VAR_NUM, ATLAS_SG_RESOLUTION,
+                   ATLAS_SG_VAR_NAME, ATLAS_SG_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the AtlasScientificEC_SpecificGravity() object - no action
      * needed.
      */
-    ~AtlasScientificEC_SpecificGravity() {}
+    ~AtlasScientificEC_SpecificGravity() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_ATLASSCIENTIFICEC_H_

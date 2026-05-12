@@ -20,29 +20,28 @@ SIMComSIM7080::SIMComSIM7080(Stream* modemStream, int8_t powerPin,
                   SIM7080_RESET_LEVEL, SIM7080_RESET_PULSE_MS, modemSleepRqPin,
                   SIM7080_WAKE_LEVEL, SIM7080_WAKE_PULSE_MS,
                   SIM7080_STATUS_TIME_MS, SIM7080_DISCONNECT_TIME_MS,
-                  SIM7080_WAKE_DELAY_MS, SIM7080_ATRESPONSE_TIME_MS),
+                  SIM7080_WAKE_DELAY_MS, SIM7080_AT_RESPONSE_TIME_MS),
 #ifdef MS_SIMCOMSIM7080_DEBUG_DEEP
-      _modemATDebugger(*modemStream, DEEP_DEBUGGING_SERIAL_OUTPUT),
+      _modemATDebugger(*modemStream, MS_SERIAL_OUTPUT),
       gsmModem(_modemATDebugger),
 #else
       gsmModem(*modemStream),
 #endif
-      gsmClient(gsmModem),
       _apn(apn) {
 }
 
-// Destructor
-SIMComSIM7080::~SIMComSIM7080() {}
 
-bool SIMComSIM7080::extraModemSetup(void) {
+bool SIMComSIM7080::extraModemSetup() {
     bool success = gsmModem.init();
-    gsmClient.init(&gsmModem);
-    _modemName = gsmModem.getModemName();
+    _modemName   = gsmModem.getModemName();
 
     // The modem is liable to crash if the send buffer overflows and TinyGSM
     // offers no way to know when that might happen. Reduce the chance of
     // problems by maxing out the send buffer size. This size should accommodate
     // a completely full 8K LogBuffer and a crappy connection.
+    /// TODO: Settings applied via CACFG are meant for *transparent*
+    /// transmission mode, not the "normal" transmission mode used by TinyGSM.
+    /// This may not be necessary (or even functional).
     gsmModem.sendAT(F("+CACFG=\"SNDBUF\",29200"));
     gsmModem.waitResponse();
 
@@ -51,8 +50,8 @@ bool SIMComSIM7080::extraModemSetup(void) {
     gsmModem.waitResponse();
     // Enable netlight indication of GPRS status
     // Enable, the netlight will be forced to enter into 64ms on/300ms off
-    // blinking state in GPRS data transmission service.Otherwise,  the netlight
-    // state is not restricted.
+    // blinking state in GPRS data transmission service.  Otherwise, the
+    // netlight state is not restricted.
     gsmModem.sendAT(F("+CNETLIGHT=1"));
     gsmModem.waitResponse();
 
@@ -70,7 +69,12 @@ MS_MODEM_CONNECT_INTERNET(SIMComSIM7080);
 MS_MODEM_DISCONNECT_INTERNET(SIMComSIM7080);
 MS_MODEM_IS_INTERNET_AVAILABLE(SIMComSIM7080);
 
-MS_MODEM_GET_NIST_TIME(SIMComSIM7080);
+MS_MODEM_CREATE_CLIENT(SIMComSIM7080, Sim7080);
+MS_MODEM_DELETE_CLIENT(SIMComSIM7080, Sim7080);
+MS_MODEM_CREATE_SECURE_CLIENT(SIMComSIM7080, Sim7080);
+MS_MODEM_DELETE_SECURE_CLIENT(SIMComSIM7080, Sim7080);
+
+MS_MODEM_GET_NIST_TIME(SIMComSIM7080, Sim7080);
 
 MS_MODEM_GET_MODEM_SIGNAL_QUALITY(SIMComSIM7080);
 MS_MODEM_GET_MODEM_BATTERY_DATA(SIMComSIM7080);
@@ -78,7 +82,7 @@ MS_MODEM_GET_MODEM_TEMPERATURE_DATA(SIMComSIM7080);
 
 // Create the wake and sleep methods for the modem
 // These can be functions of any type and must return a boolean
-bool SIMComSIM7080::modemWakeFxn(void) {
+bool SIMComSIM7080::modemWakeFxn() {
     // Must power on and then pulse on
     if (_modemSleepRqPin >= 0) {
         MS_DBG(F("Sending a"), _wakePulse_ms, F("ms"),
@@ -104,14 +108,19 @@ bool SIMComSIM7080::modemWakeFxn(void) {
 }
 
 
-bool SIMComSIM7080::modemSleepFxn(void) {
+bool SIMComSIM7080::modemSleepFxn() {
     if (_modemSleepRqPin >= 0) {
         // Must have access to `PWRKEY` pin to sleep
         // Easiest to just go to sleep with the AT command rather than using
         // pins
         MS_DBG(F("Asking SIM7080 to power down"));
-        return gsmModem.poweroff();
+        bool res = gsmModem.poweroff();
+        gsmModem.stream.flush();
+        return res;
     } else {  // DON'T go to sleep if we can't wake up!
+        gsmModem.stream.flush();
         return true;
     }
 }
+
+// cSpell:ignore CACFG netlight CNETLIGHT CBATCHK CPIN

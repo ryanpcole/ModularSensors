@@ -42,7 +42,7 @@
  * (square) on the MaxSonar.  The white and shield (bare silver) wires from the
  * MaxTemp should both be attached to Pin 7 (GND).  The MaxTemp communicates
  * directly with the MaxSonar and there is no need to make any changes on the
- * Aruduino itself to accomodate it.  It is not possible to read the temperature
+ * Arduino itself to accommodate it.  It is not possible to read the temperature
  * data from the MaxTemp.
  *
  * The MaxBotix sensor have two different modes: free-ranging and triggered.
@@ -85,6 +85,11 @@
  * - [MaxTemp Datasheet](https://github.com/EnviroDIY/ModularSensors/wiki/Sensor-Datasheets/Maxbotix-HR-MaxTemp-Datasheet.pdf)
  * - [Wiring Guide](https://github.com/EnviroDIY/ModularSensors/wiki/Sensor-Datasheets/Maxbotix-MaxSonar-MB7954-Datasheet-ConnectWire.pdf)
  *
+ * @section sensor_maxbotix_flags Build flags
+ * - ```-D MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES=25```
+ *      - Changes the default number of measurement retries when a measurement
+ * fails. The default value is 25. This sensor fails frequently.
+ *
  * @section sensor_maxbotix_ctor Sensor Constructor
  * {{ @ref MaxBotixSonar::MaxBotixSonar }}
  *
@@ -100,21 +105,56 @@
 #ifndef SRC_SENSORS_MAXBOTIXSONAR_H_
 #define SRC_SENSORS_MAXBOTIXSONAR_H_
 
-// Debugging Statement
-// #define MS_MAXBOTIXSONAR_DEBUG
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_MAXBOTIXSONAR_DEBUG
 #define MS_DEBUGGING_STD "MaxBotixSonar"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
+
+// Include other in-library and external dependencies
 #include "VariableBase.h"
 #include "SensorBase.h"
 
 /** @ingroup sensor_maxbotix */
 /**@{*/
+
+/**
+ * @anchor sensor_maxbotix_config
+ * @name Sensor Configuration
+ * Build-time configuration for the MaxBotix HRXL MaxSonar
+ */
+/**@{*/
+#if !defined(MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES) || defined(DOXYGEN)
+/**
+ * @brief Default number of measurement retries for MaxBotix sensors
+ *
+ * The default number of times to retry a measurement when it fails. The
+ * MaxBotix sensors can sometimes return invalid readings (0 or values above
+ * the maximum range), especially in challenging environmental conditions.
+ * Higher values provide better reliability but may increase total measurement
+ * time on sensor failures. This can be set at runtime for individual sensors
+ * and the default can be overridden at compile time with `-D
+ * MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES=value`
+ */
+#define MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES 25
+#endif
+
+// Static assert to validate measurement retries is reasonable
+static_assert(MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES >= 0 &&
+                  MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES <= 50,
+              "MAXBOTIX_DEFAULT_MEASUREMENT_RETRIES must be between 0 and 50 "
+              "(reasonable measurement retry range)");
+/**@}*/
 
 /**
  * @anchor sensor_maxbotix_var_counts
@@ -140,7 +180,9 @@
 /// up (0ms stabilization).
 #define HRXL_STABILIZATION_TIME_MS 0
 /// @brief Sensor::_measurementTime_ms; the HRXL takes 166ms to complete a
-/// measurement.
+/// measurement.  It outputs results at least every 166ms.
+/// @note Because the default number of measurement retries is 25, the actual
+/// time to get a measurement result may be much longer than 166ms.
 #define HRXL_MEASUREMENT_TIME_MS 250
 /**@}*/
 
@@ -148,13 +190,17 @@
  * @anchor sensor_maxbotix_range
  * @name Range
  * The range variable from a Maxbotix HRXL ultrasonic range finder
- * - Range depends on the exact model
+ * - Range depends on the exact model, up to 10m for the longest range model.
  * - Accuracy is ±1%
  *
  * {{ @ref MaxBotixSonar_Range::MaxBotixSonar_Range }}
  */
 /**@{*/
-/// @brief Decimals places in string representation; range should have 0 -
+/// @brief Minimum range in millimeters.
+#define HRXL_MIN_MM 0
+/// @brief Maximum range in millimeters.
+#define HRXL_MAX_MM 10000
+/// @brief Decimal places in string representation; range should have 0 -
 /// resolution is 1mm (except for models which have range 10mm).
 #define HRXL_RESOLUTION 0
 /// @brief Sensor variable number; range is stored in sensorValues[0].
@@ -213,12 +259,9 @@ class MaxBotixSonar : public Sensor {
     /**
      * @brief Destroy the MaxBotix Sonar object
      */
-    ~MaxBotixSonar();
+    ~MaxBotixSonar() override = default;
 
-    /**
-     * @copydoc Sensor::getSensorLocation()
-     */
-    String getSensorLocation(void) override;
+    String getSensorLocation() override;
 
     /**
      * @brief Do any one-time preparations needed before the sensor will be able
@@ -230,7 +273,7 @@ class MaxBotixSonar : public Sensor {
      *
      * @return True if the setup was successful.
      */
-    bool setup(void) override;
+    bool setup() override;
     /**
      * @brief Wake the sensor up, if necessary.  Do whatever it takes to get a
      * sensor in the proper state to begin a measurement.
@@ -245,12 +288,17 @@ class MaxBotixSonar : public Sensor {
      *
      * @return True if the wake function completed successfully.
      */
-    bool wake(void) override;
-
+    bool wake() override;
     /**
-     * @copydoc Sensor::addSingleMeasurementResult()
+     * @brief Puts the MaxBotixSonar sensor to sleep after emptying and flushing
+     * the stream.
+     *
+     * @return True if the sleep function completed successfully.
      */
-    bool addSingleMeasurementResult(void) override;
+    bool sleep() override;
+
+    bool startSingleMeasurement() override;
+    bool addSingleMeasurementResult() override;
 
  private:
     int16_t _maxRange;    ///< The maximum range of the Maxbotix sonar
@@ -261,10 +309,20 @@ class MaxBotixSonar : public Sensor {
      */
     bool _convertCm;
     /**
-     * @brief Private reference to the stream for communciation with the
+     * @brief Private reference to the stream for communication with the
      * Maxbotix sensor.
      */
     Stream* _stream;
+
+    /**
+     * @brief Helper function to dump any available characters from the stream
+     * buffer
+     *
+     * Reads and discards all available characters from the stream to clear the
+     * buffer. Optionally prints debugging output showing the discarded
+     * characters.
+     */
+    void dumpBuffer();
 };
 
 
@@ -292,22 +350,14 @@ class MaxBotixSonar_Range : public Variable {
     explicit MaxBotixSonar_Range(MaxBotixSonar* parentSense,
                                  const char*    uuid    = "",
                                  const char*    varCode = HRXL_DEFAULT_CODE)
-        : Variable(parentSense, (const uint8_t)HRXL_VAR_NUM,
-                   (uint8_t)HRXL_RESOLUTION, HRXL_VAR_NAME, HRXL_UNIT_NAME,
-                   varCode, uuid) {}
-    /**
-     * @brief Construct a new MaxBotixSonar_Range object.
-     *
-     * @note This must be tied with a parent MaxBotixSonar before it can be
-     * used.
-     */
-    MaxBotixSonar_Range()
-        : Variable((const uint8_t)HRXL_VAR_NUM, (uint8_t)HRXL_RESOLUTION,
-                   HRXL_VAR_NAME, HRXL_UNIT_NAME, HRXL_DEFAULT_CODE) {}
+        : Variable(parentSense, HRXL_VAR_NUM, HRXL_RESOLUTION, HRXL_VAR_NAME,
+                   HRXL_UNIT_NAME, varCode, uuid) {}
     /**
      * @brief Destroy the MaxBotixSonar_Range object - no action needed.
      */
-    ~MaxBotixSonar_Range() {}
+    ~MaxBotixSonar_Range() override = default;
 };
 /**@}*/
 #endif  // SRC_SENSORS_MAXBOTIXSONAR_H_
+
+// cSpell:words max_botix

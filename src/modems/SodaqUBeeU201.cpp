@@ -20,19 +20,15 @@ SodaqUBeeU201::SodaqUBeeU201(Stream* modemStream, int8_t powerPin,
                   U201_RESET_LEVEL, U201_RESET_PULSE_MS, modemSleepRqPin,
                   U201_WAKE_LEVEL, U201_WAKE_PULSE_MS, U201_STATUS_TIME_MS,
                   U201_DISCONNECT_TIME_MS, U201_WAKE_DELAY_MS,
-                  U201_ATRESPONSE_TIME_MS),
+                  U201_AT_RESPONSE_TIME_MS),
 #ifdef MS_SODAQUBEEU201_DEBUG_DEEP
-      _modemATDebugger(*modemStream, DEEP_DEBUGGING_SERIAL_OUTPUT),
+      _modemATDebugger(*modemStream, MS_SERIAL_OUTPUT),
       gsmModem(_modemATDebugger),
 #else
       gsmModem(*modemStream),
 #endif
-      gsmClient(gsmModem),
       _apn(apn) {
 }
-
-// Destructor
-SodaqUBeeU201::~SodaqUBeeU201() {}
 
 MS_IS_MODEM_AWAKE(SodaqUBeeU201);
 MS_MODEM_WAKE(SodaqUBeeU201);
@@ -41,7 +37,12 @@ MS_MODEM_CONNECT_INTERNET(SodaqUBeeU201);
 MS_MODEM_DISCONNECT_INTERNET(SodaqUBeeU201);
 MS_MODEM_IS_INTERNET_AVAILABLE(SodaqUBeeU201);
 
-MS_MODEM_GET_NIST_TIME(SodaqUBeeU201);
+MS_MODEM_CREATE_CLIENT(SodaqUBeeU201, UBLOX);
+MS_MODEM_DELETE_CLIENT(SodaqUBeeU201, UBLOX);
+MS_MODEM_CREATE_SECURE_CLIENT(SodaqUBeeU201, UBLOX);
+MS_MODEM_DELETE_SECURE_CLIENT(SodaqUBeeU201, UBLOX);
+
+MS_MODEM_GET_NIST_TIME(SodaqUBeeU201, UBLOX);
 
 MS_MODEM_GET_MODEM_SIGNAL_QUALITY(SodaqUBeeU201);
 MS_MODEM_GET_MODEM_BATTERY_DATA(SodaqUBeeU201);
@@ -49,7 +50,7 @@ MS_MODEM_GET_MODEM_TEMPERATURE_DATA(SodaqUBeeU201);
 
 // Create the wake and sleep methods for the modem
 // These can be functions of any type and must return a boolean
-bool SodaqUBeeU201::modemWakeFxn(void) {
+bool SodaqUBeeU201::modemWakeFxn() {
     // SARA/LISA U2/G2 and SARA G3 series turn on when power is applied
     // No pulsing required in this case
     if (_powerPin >= 0) { return true; }
@@ -68,25 +69,32 @@ bool SodaqUBeeU201::modemWakeFxn(void) {
 }
 
 
-bool SodaqUBeeU201::modemSleepFxn(void) {
+bool SodaqUBeeU201::modemSleepFxn() {
     if (_powerPin >= 0 || _modemSleepRqPin >= 0) {
         // will go on with power on
         // Easiest to just go to sleep with the AT command rather than using
         // pins
         MS_DBG(F("Asking u-blox SARA U201 to power down"));
-        return gsmModem.poweroff();
+        bool res = gsmModem.poweroff();
+        gsmModem.stream.flush();
+        return res;
     } else {  // DON'T go to sleep if we can't wake up!
+        gsmModem.stream.flush();
         return true;
     }
 }
 
-bool SodaqUBeeU201::extraModemSetup(void) {
+bool SodaqUBeeU201::extraModemSetup() {
     bool success = gsmModem.init();
-    gsmClient.init(&gsmModem);
-    _modemName = gsmModem.getModemName();
+    _modemName   = gsmModem.getModemName();
     // Turn on network indicator light
     // Pin 16 = GPIO1, function 2 = network status indication
     gsmModem.sendAT(GF("+UGPIOC=16,2"));
-    gsmModem.waitResponse();
+    if (gsmModem.waitResponse() != 1) {
+        // NOTE: We don't consider setup a failure without the light
+        MS_DBG(F("Failed to configure network indicator LED"));
+    }
     return success;
 }
+
+// cSpell:ignore UGPIOC

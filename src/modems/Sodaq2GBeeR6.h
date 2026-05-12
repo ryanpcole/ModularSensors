@@ -61,17 +61,23 @@
 #ifndef SRC_MODEMS_SODAQ2GBEER6_H_
 #define SRC_MODEMS_SODAQ2GBEER6_H_
 
-// Debugging Statement
-// #define MS_SODAQ2GBEER6_DEBUG
-// #define MS_SODAQ2GBEER6_DEBUG_DEEP
+// Include the library config before anything else
+#include "ModSensorConfig.h"
 
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_SODAQ2GBEER6_DEBUG
 #define MS_DEBUGGING_STD "Sodaq2GBeeR6"
 #endif
 
-// Included Dependencies
+// Include the debugger
 #include "ModSensorDebugger.h"
+// Undefine the debugger label[s]
 #undef MS_DEBUGGING_STD
+
+// Include other in-library and external dependencies
 #include "SIMComSIM800.h"
 
 #ifdef MS_SODAQ2GBEER6_DEBUG_DEEP
@@ -100,7 +106,7 @@
  * @brief The loggerModem subclass for the [Sodaq 2GBee](@ref modem_gprsbee)
  * revisions 6 and higher based on the SIMCOM SIM800H.
  *
- * @note The Sodaq GPRSBee doesn't expose the SIM800's reset pin..
+ * @note The Sodaq GPRSBee doesn't expose the SIM800's reset pin.
  *
  * @note The power pin of the SIM800 is wired to the XBee's `DTR` pin, the
  * `PWR_KEY` itself is not exposed - it is tied inversely to the power in to the
@@ -115,7 +121,7 @@ class Sodaq2GBeeR6 : public SIMComSIM800 {
     /**
      * @brief Construct a new Sodaq 2GBee R6 object
      *
-     * The constuctor initializes all of the provided member variables,
+     * The constructor initializes all of the provided member variables,
      * constructs a loggerModem parent class with the appropriate timing for the
      * module, calls the constructor for a TinyGSM modem on the provided
      * modemStream, and creates a TinyGSM Client linked to the modem.
@@ -133,7 +139,7 @@ class Sodaq2GBeeR6 : public SIMComSIM800 {
     /**
      * @brief Construct a new Sodaq 2GBee R6 object
      *
-     * The constuctor initializes all of the provided member variables,
+     * The constructor initializes all of the provided member variables,
      * constructs a loggerModem parent class with the appropriate timing for the
      * module, calls the constructor for a TinyGSM modem on the provided
      * modemStream, and creates a TinyGSM Client linked to the modem.
@@ -156,7 +162,7 @@ class Sodaq2GBeeR6 : public SIMComSIM800 {
     /**
      * @brief Destroy the Sodaq 2GBee R6 object - no action taken
      */
-    ~Sodaq2GBeeR6();
+    ~Sodaq2GBeeR6() override = default;
 
     /**
      * @brief Sets the pin to use to control voltage reference on the GPRSBee.
@@ -167,9 +173,9 @@ class Sodaq2GBeeR6 : public SIMComSIM800 {
     void setVRefPin(int8_t vRefPin);
 
  protected:
-    bool modemSleepFxn(void) override;
-    bool modemWakeFxn(void) override;
-    bool extraModemSetup(void) override;
+    bool modemSleepFxn() override;
+    bool modemWakeFxn() override;
+    bool extraModemSetup() override;
 
  private:
     /**
@@ -180,3 +186,5 @@ class Sodaq2GBeeR6 : public SIMComSIM800 {
 };
 /**@}*/
 #endif  // SRC_MODEMS_SODAQ2GBEER6_H_
+
+// cSpell:ignore SODAQ2GBEER6 GPRSBee PWRKEY
