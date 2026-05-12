@@ -1,5 +1,5 @@
 /**
- * @file CS500.h
+ * @file CS500tempRH.h
  * @author Written By: Ryan Cole
  *
  * @brief Measures temperature and relative humidity using two analog inputs and
@@ -10,7 +10,7 @@
  * @defgroup sensor_cs500 Temperature and relative humidity via a Campbell Sci
  * CS500 sensor
  *
- * @ingroup the_sensors
+ * @ingroup analog_group
  *
  * @tableofcontents
  * @m_footernavigation
@@ -73,19 +73,32 @@
 #ifndef SRC_SENSORS_CS500_H_
 #define SRC_SENSORS_CS500_H_
 
+// Include the library config before anything else
+#include "ModSensorConfig.h"
+
+// Include the debugging config
+#include "ModSensorDebugConfig.h"
+
+// Define the print label[s] for the debugger
 #ifdef MS_CS500_DEBUG
 #define MS_DEBUGGING_STD "CS500tempRH"
 #endif
 #ifdef MS_CS500_DEBUG_DEEP
 #define MS_DEBUGGING_DEEP "CS500tempRH"
 #endif
-// Included Dependencies
+
+// Include the debugger
 #include "ModSensorDebugger.h"
 #undef MS_DEBUGGING_STD
 #undef MS_DEBUGGING_DEEP
+
+// Include other in-library and external dependencies
 #include "SensorBase.h"
 #include "VariableBase.h"
-#include "math.h"
+#include "math.h" // TODO do I need this?
+
+// Forward declaration
+class AnalogVoltageReader;
 
 /** @ingroup sensor_cs500 */
 /**@{*/
@@ -134,13 +147,24 @@
  *  */
 /**@{*/
 /**
- * @brief Decimals places in string representation; Temp and rH should both have 1
+ * @brief Decimals places in string representation; Temp and rH should both have 4
  *
  * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define TEMP_VOLTAGE_RESOLUTION 4
+
+/// @brief Minimum temperature voltage (mV)
+#define TEMP_VOLTAGE_MIN 0
+/// @brief Maximum temperature voltage (mV)
+#define TEMP_VOLTAGE_MAX 1000
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define TEMP_VOLTAGE_VAR_NUM 0
+/// @brief Decimal places in string representation
+#ifdef MS_US_ADS1015
+#define TEMP_VOLTAGE_RESOLUTION 1
+#else
+// @brief Decimal places in string representation
+#define TEMP_VOLTAGE_RESOLUTION 4
+#endif
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "Voltage"
@@ -164,13 +188,23 @@
  *  */
 /**@{*/
 /**
- * @brief Decimals places in string representation; Temp and rH should both have 1
+ * @brief Decimals places in string representation; Temp and rH should both have 4
  *
  * Range of 0-5V5 with 16bit ADC - resolution of 0.0008 mV then converted to temp or rH
  */
-#define RH_VOLTAGE_RESOLUTION 4
+/// @brief Minimum temperature voltage (mV)
+#define RH_VOLTAGE_MIN 0
+/// @brief Maximum temperature voltage (mV)
+#define RH_VOLTAGE_MAX 1000
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define RH_VOLTAGE_VAR_NUM 1
+/// @brief Decimal places in string representation
+#ifdef MS_US_ADS1015
+#define RH_VOLTAGE_RESOLUTION 1
+#else
+// @brief Decimal places in string representation
+#define RH_VOLTAGE_RESOLUTION 4
+#endif
 /// @brief Variable name in
 /// [ODM2 controlled vocabulary](http://vocabulary.odm2.org/variablename/);
 /// "Voltage"
@@ -200,6 +234,11 @@
  * degC = mV * 0.1 - 40
  * 
  */
+/// @brief Minimum temperature (Degrees C)
+#define TEMP_DEGC_MIN -40
+/// @brief Maximum temperature (Degrees C)
+#define TEMP_DEGC_MAX 60
+/// @brief Decimal places in string representation
 #define TEMP_DEGC_RESOLUTION 1
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define TEMP_DEGC_VAR_NUM 2
@@ -232,6 +271,12 @@
  * rH = mV * 0.1
  * 
  */
+
+ /// @brief Minimum relative humidity (%)
+#define RH_PERCENT_MIN 0
+/// @brief Maximum relative humidity (%)
+#define RH_PERCENT_MAX 100
+
 #define RH_PERCENT_RESOLUTION 1
 /// @brief Sensor vensor variable number; tempV is stored in sensorValues[0].
 #define RH_PERCENT_VAR_NUM 3
@@ -247,8 +292,6 @@
 #define RH_PERCENT_DEFAULT_CODE "rH%"
 /**@}*/
 
-/// @brief The assumed address of the ADS1115, 1001 000 (ADDR = GND)
-#define ADS1115_ADDRESS 0x48
 
 /**
  * @brief Class for the analog Temperature and Relative Humidity monitor
@@ -258,55 +301,75 @@
 class CS500tempRH : public Sensor {
  public:
     /**
-     * @brief Construct a new CS500tempRH object.
-     *     
-     * @note ModularSensors only supports connecting the ADS1x15 to the primary
-     * hardware I2C instance defined in the Arduino core.  Connecting the ADS to
-     * a secondary hardware or software I2C instance is *not* supported!
+     * @brief Construct a new CS500tempRH object. Need the power pin, the
+     * analog data channel, and the calibration info.
+     *
+     * By default, this constructor will internally create a default
+     * AnalogVoltageReader implementation for voltage readings, but a pointer to
+     * a custom AnalogVoltageReader object can be passed in if desired.
 
      * @param powerPin The port pin providing power to the temp/rH probe.
      * Needs to be 12 V switched power pin (pin XX)
-     * 
-     * - The ADS1x15 requires an input voltage of 2.0-5.5V, but this library
-     * assumes the ADS is powered with 3.3V.
 
-     * @param adsChannelTemp The analog data channel _on the TI ADS1115_ that the
-     * temp sensor is connected to (0-3).
-     * @param adsChannel The analog data channel _on the TI ADS1115_ that the
-     * rH sensor is connected to (0-3).
-     * @param i2cAddress The I2C address of the ADS 1x15, default is 0x48 (ADDR
-     * = GND)
+      @param analogChannelTemp The analog data channel or processor pin for voltage
+     * measurements of the Temp sensor. The significance of the channel number depends on the
+     * specific AnalogVoltageReader implementation used for voltage readings.
+     * For example, with the default TI ADS1x15, this would be the ADC channel
+     * (0-3) that the sensor is connected to.  Negative or invalid channel
+     * numbers are not clamped and will cause the reading to fail and emit a
+     * warning.
+     * @param analogChannelRH The analog data channel or processor pin for voltage
+     * measurements on the RH sensor. The significance of the channel number depends on the
+     * specific AnalogVoltageReader implementation used for voltage readings.
+     * For example, with the default TI ADS1x15, this would be the ADC channel
+     * (0-3) that the sensor is connected to.  Negative or invalid channel
+     * numbers are not clamped and will cause the reading to fail and emit a
+     * warning.
      * @param measurementsToAverage The number of measurements to average;
      * optional with default value of 1.
+     * @param analogVoltageReader Pointer to an AnalogVoltageReader object for
+     * voltage measurements.  Pass nullptr (the default) to have the constructor
+     * internally create and own an analog voltage reader.  For backward
+     * compatibility, the default reader uses a TI ADS1115 or ADS1015.  If a
+     * non-null pointer is supplied, the caller retains ownership and must
+     * ensure its lifetime exceeds that of this object.
+
      */
     CS500tempRH(int8_t powerPin,
-                        uint8_t adsChannelTemp,
-                        uint8_t adsChannelRH,
-                        uint8_t i2cAddress            = ADS1115_ADDRESS,  
-                        uint8_t measurementsToAverage = 1);
+                        int8_t analogChannelTemp,
+                        int8_t analogChannelRH,
+                        uint8_t measurementsToAverage = 1,
+                        AnalogVoltageReader* analogVoltageReader = nullptr);
 
     /**
      * @brief Destroy the CS500tempRH object - no action needed.
      */
-    ~CS500tempRH();
+    ~CS500tempRH() override;
 
-    /**
-     * @brief Report the sensor info.
-     *
-     * @return **String** Text describing how the sensor is attached to the mcu.
-     */
-    String getSensorLocation(void) override;
+    // Delete copy constructor and copy assignment operator to prevent shallow
+    // copies
+    CS500tempRH(const CS500tempRH&)            = delete;
+    CS500tempRH& operator=(const CS500tempRH&) = delete;
 
-    /**
-     * @copydoc Sensor::addSingleMeasurementResult()
-     */
-    bool addSingleMeasurementResult(void) override;
+    // Delete move constructor and move assignment operator
+    CS500tempRH(CS500tempRH&&)            = delete;
+    CS500tempRH& operator=(CS500tempRH&&) = delete;
+
+    String getSensorLocation() override;
+
+    bool setup() override;
+
+    bool addSingleMeasurementResult() override;
 
  private:
-    uint8_t _adsChannelTemp;
-    uint8_t _adsChannelRH;
-    uint8_t _i2cAddress;
-
+    /// @brief Pointer to analog voltage reader
+    AnalogVoltageReader* _analogVoltageReader = nullptr;
+    /// @brief Flag to track if this object owns the analog voltage reader and
+    /// should delete it in the destructor
+    bool _ownsAnalogVoltageReader = false;
+    // Also define the analog channels
+    int8_t _analogChannelTemp = -1;
+    int8_t _analogChannelRH   = -1;
 };
 
 /**
@@ -328,31 +391,21 @@ class CS500tempRH_Temp : public Variable {
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    CS500tempRH_Temp(
+    explicit CS500tempRH_Temp(
         CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = TEMP_DEGC_DEFAULT_CODE)
         : Variable(parentSense,
-                   (const uint8_t)TEMP_DEGC_VAR_NUM,
-                   (uint8_t)TEMP_DEGC_RESOLUTION,
+                   TEMP_DEGC_VAR_NUM,
+                   TEMP_DEGC_RESOLUTION,
                    TEMP_DEGC_VAR_NAME,
-                   TEMP_DEGC_UNIT_NAME, varCode, uuid) {}
+                   TEMP_DEGC_UNIT_NAME, 
+                   varCode, 
+                   uuid) {}
 
-    /**
-     * @brief Construct a new CS500tempRH_Temp object.
-     *
-     * @note This must be tied with a parent CS500tempRH before it
-     * can be used.
-     */
-    CS500tempRH_Temp()
-        : Variable((const uint8_t)TEMP_DEGC_VAR_NUM,
-                   (uint8_t)TEMP_DEGC_RESOLUTION,
-                   TEMP_DEGC_VAR_NAME,
-                   TEMP_DEGC_UNIT_NAME,
-                   TEMP_DEGC_DEFAULT_CODE) {}
     /**
      * @brief Destroy the CS500tempRH_Temp object - no action needed.
      */
-    ~CS500tempRH_Temp() {}
+    ~CS500tempRH_Temp() override = default;
 };
 
 /**
@@ -374,31 +427,20 @@ class CS500tempRH_rH : public Variable {
      * @param varCode A short code to help identify the variable in files;
      * optional with a default value of "degC".
      */
-    CS500tempRH_rH(
+    explicit CS500tempRH_rH(
         CS500tempRH* parentSense, const char* uuid = "",
         const char* varCode = RH_PERCENT_DEFAULT_CODE)
         : Variable(parentSense,
-                   (const uint8_t)RH_PERCENT_VAR_NUM,
-                   (uint8_t)RH_PERCENT_RESOLUTION,
+                   RH_PERCENT_VAR_NUM,
+                   RH_PERCENT_RESOLUTION,
                    RH_PERCENT_VAR_NAME,
                    RH_PERCENT_UNIT_NAME, varCode, uuid) {}
 
-    /**
-     * @brief Construct a new CS500tempRH_Temp object.
-     *
-     * @note This must be tied with a parent CS500tempRH before it
-     * can be used.
-     */
-    CS500tempRH_rH()
-        : Variable((const uint8_t)RH_PERCENT_VAR_NUM,
-                   (uint8_t)RH_PERCENT_RESOLUTION,
-                   RH_PERCENT_VAR_NAME,
-                   RH_PERCENT_UNIT_NAME,
-                   RH_PERCENT_DEFAULT_CODE) {}
+    
     /**
      * @brief Destroy the CS500tempRH_Temp object - no action needed.
      */
-    ~CS500tempRH_rH() {}
+    ~CS500tempRH_rH() override = default;
 };
 
 /**@}*/

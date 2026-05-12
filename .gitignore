@@ -69,7 +69,7 @@ __pycache__/
 lib/*
 include/*
 boards/*
-/platformio.ini
+/platformio.ini*
 .sconsign.dblite
 compile_commands.json
 
