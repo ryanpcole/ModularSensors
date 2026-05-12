@@ -92,7 +92,7 @@ docs/examples/*
 docs/examples.dox_x
 platformio_extra_envs.ini
 src/sensors/table.md
-.cache
+cache
 output_*.log
 examples/DRWI_Mayfly1_Wifi_5tm_ds18b20_1/DRWI_Mayfly1_Wifi_5tm_ds18b20_1.ino
 clang_format_all.bat
